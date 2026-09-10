@@ -233,7 +233,8 @@ class EvidenceFusionService:
         osm_data: Optional[Dict[str, Any]] = None,
         satellite_data: Optional[Dict[str, Any]] = None,
         sentinel1_data: Optional[Dict[str, Any]] = None,
-        selected_satellite: str = "SENTINEL_2"
+        selected_satellite: str = "SENTINEL_2",
+        base_ai_classification: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Builds a normalized, standardized Evidence Object adhering strictly to the SIH Phase 6E schema.
@@ -338,7 +339,8 @@ class EvidenceFusionService:
             "industrial_context": osm_block,
             "sentinel2": sat_block,
             "sentinel1": s1_block,
-            "selected_satellite": selected_satellite
+            "selected_satellite": selected_satellite,
+            "base_ai_classification": base_ai_classification
         }
 
     def fuse(
@@ -532,10 +534,12 @@ class EvidenceFusionService:
         }
 
         # 6. Candidate Classification & Conflict Handling Logic
-        # Calculate composite scores for each hypothesis
-        has_industrial_osm = (osm_score >= 0.40)
-        has_strong_firms = (firms_score >= 0.40)
-        has_high_persistence = (pers_score >= 0.50)
+        base_ai_class = str(evidence_object.get("base_ai_classification") or "").upper()
+        has_industrial_osm = (osm_score >= 0.35) or bool(osm.get("nearest_distance_km") and float(osm["nearest_distance_km"]) <= 3.0)
+        has_strong_firms = (firms_score >= 0.35) or (firms.get("frp") is not None and float(firms["frp"]) >= 15.0)
+        has_high_persistence = (pers_score >= 0.40) or (pers.get("observation_count", 1) > 1)
+        base_ai_industrial = any(term in base_ai_class for term in ["INDUSTRIAL", "PERSISTENT", "FLARE"])
+        base_ai_wildfire = any(term in base_ai_class for term in ["WILDFIRE", "AGRICULTURAL", "FOREST"])
 
         candidate_class = "UNKNOWN"
         candidate_score = 0.0
@@ -550,11 +554,9 @@ class EvidenceFusionService:
             confidence_label = "INCONCLUSIVE"
             warnings.append("Insufficient multi-source evidence available to produce a candidate classification.")
 
-        # Check for conflicts
+        # Optical Conflicts: When clear Sentinel-2 imagery is available
         elif sat.get("available") and sat_class == "WILDFIRE" and has_industrial_osm and sat_quality in ["GOOD", "MODERATE"]:
             warnings.append("Conflicting evidence: Proximity to industrial infrastructure detected, but Sentinel-2 optical imagery indicates vegetative burning (WILDFIRE).")
-            # In case of direct conflict between OSM proximity and clear Sentinel-2 wildfire visual evidence:
-            # We defer to optical combustion pattern, or lower score
             candidate_class = "WILDFIRE"
             candidate_score = round(0.50 * firms_score + 0.30 * sat_score + 0.20 * (1.0 - osm_score), 4)
             evidence_strength = "MODERATE"
@@ -563,7 +565,6 @@ class EvidenceFusionService:
 
         elif sat.get("available") and sat_class == "INDUSTRIAL_FIRE" and not has_industrial_osm and sat_quality in ["GOOD", "MODERATE"]:
             warnings.append("Conflicting evidence: Sentinel-2 classifier predicts INDUSTRIAL_FIRE, but OpenStreetMap shows no mapped industrial infrastructure within 5.0 km.")
-            # Optical heat core might be a flare or intense wildfire hot-zone
             if has_strong_firms and has_high_persistence:
                 candidate_class = "INDUSTRIAL_FIRE"
                 candidate_score = round(0.40 * firms_score + 0.30 * pers_score + 0.30 * sat_score, 4)
@@ -576,8 +577,36 @@ class EvidenceFusionService:
                 evidence_strength = "MODERATE"
                 confidence_label = "MEDIUM"
 
-        elif has_industrial_osm and (sat_class == "INDUSTRIAL_FIRE" or (not sat.get("available") and (has_strong_firms or has_high_persistence))):
-            # Case A: Industrial Fire Alignment (OSM + S2 Industrial Fire or OSM + High Persistence)
+        elif sat.get("available") and sat_class == "INDUSTRIAL_FIRE" and sat_quality in ["GOOD", "MODERATE"]:
+            # Clear optical industrial fire
+            candidate_class = "INDUSTRIAL_FIRE"
+            raw_composite = (
+                norm_firms_w * firms_score +
+                norm_pers_w * pers_score +
+                norm_osm_w * osm_score +
+                norm_sat_w * sat_score
+            )
+            candidate_score = round(max(0.0, min(1.0, raw_composite)), 4)
+            evidence_strength = "STRONG" if candidate_score >= 0.65 else "MODERATE"
+            confidence_label = "HIGH" if candidate_score >= 0.65 else "MEDIUM"
+            reasoning.append(f"Confirmed INDUSTRIAL_FIRE candidate via high-confidence Sentinel-2 optical classification ({sat_conf*100:.0f}%) and thermal alignment.")
+
+        elif sat.get("available") and sat_class == "WILDFIRE" and sat_quality in ["GOOD", "MODERATE"]:
+            # Clear optical wildfire
+            candidate_class = "WILDFIRE"
+            raw_composite = (
+                norm_firms_w * firms_score +
+                norm_pers_w * (1.0 - pers_score * 0.5) +
+                norm_osm_w * (1.0 - osm_score) +
+                norm_sat_w * sat_score
+            )
+            candidate_score = round(max(0.0, min(1.0, raw_composite)), 4)
+            evidence_strength = "STRONG" if candidate_score >= 0.65 else "MODERATE"
+            confidence_label = "HIGH" if candidate_score >= 0.65 else "MEDIUM"
+            reasoning.append(f"Confirmed WILDFIRE candidate via Sentinel-2 optical vegetative combustion patterns ({sat_conf*100:.0f}%).")
+
+        elif (has_industrial_osm or base_ai_industrial) and (has_strong_firms or has_high_persistence or firms.get("available")):
+            # Industrial fire alignment: proximity to mapped industrial infrastructure + positive thermal detection
             candidate_class = "INDUSTRIAL_FIRE"
             raw_composite = (
                 norm_firms_w * firms_score +
@@ -586,45 +615,35 @@ class EvidenceFusionService:
                 norm_sat_w * (sat_score if sat_class == "INDUSTRIAL_FIRE" else 0.5)
             )
             candidate_score = round(max(0.0, min(1.0, raw_composite)), 4)
-            if candidate_score >= 0.65 and sat_quality in ["GOOD", "MODERATE", "UNAVAILABLE"]:
-                evidence_strength = "STRONG"
-                confidence_label = "HIGH"
-            else:
-                evidence_strength = "MODERATE"
-                confidence_label = "MEDIUM"
+            evidence_strength = "STRONG" if candidate_score >= 0.60 else "MODERATE"
+            confidence_label = "HIGH" if candidate_score >= 0.60 else "MEDIUM"
+            reasoning.append("Classified as INDUSTRIAL_FIRE candidate based on proximity to mapped industrial infrastructure and thermal emission signature.")
 
-        elif (not has_industrial_osm or osm_score < 0.25) and (sat_class == "WILDFIRE" or (has_strong_firms and not sat.get("available"))):
-            # Case C: Wildfire candidate
+        elif (firms.get("available") and (firms_score >= 0.15 or (firms.get("frp") is not None and float(firms["frp"]) >= 2.0))) or base_ai_wildfire:
+            # Active combustion in non-industrial open/vegetation terrain
             candidate_class = "WILDFIRE"
             raw_composite = (
                 norm_firms_w * firms_score +
-                norm_pers_w * (1.0 - pers_score * 0.5) +  # Wildfires move
+                norm_pers_w * (1.0 - pers_score * 0.5) +
                 norm_osm_w * (1.0 - osm_score) +
                 norm_sat_w * (sat_score if sat_class == "WILDFIRE" else 0.5)
             )
             candidate_score = round(max(0.0, min(1.0, raw_composite)), 4)
-            evidence_strength = "STRONG" if candidate_score >= 0.65 else "MODERATE"
-            confidence_label = "HIGH" if candidate_score >= 0.65 else "MEDIUM"
+            evidence_strength = "STRONG" if candidate_score >= 0.60 else "MODERATE"
+            confidence_label = "HIGH" if candidate_score >= 0.60 else "MEDIUM"
+            reasoning.append("Classified as WILDFIRE candidate based on active satellite thermal anomaly detection in non-industrial open/vegetation terrain.")
 
-        elif (firms.get("available") and firms_score < 0.30 and not has_strong_firms) and (sat_class == "NON_FIRE" or not sat.get("available")):
-            # Case D: Non-fire / nominal ground
+        elif (firms.get("available") and firms_score < 0.20 and not has_strong_firms) and (sat_class == "NON_FIRE" or not sat.get("available")):
             candidate_class = "NON_FIRE"
             candidate_score = round(1.0 - (0.5 * firms_score + 0.5 * (1.0 - sat_score if sat_class == "NON_FIRE" else 0.5)), 4)
             candidate_score = max(0.0, min(1.0, candidate_score))
             evidence_strength = "MODERATE"
             confidence_label = "MEDIUM"
+            reasoning.append("Classified as NON_FIRE based on negligible thermal radiative power and lack of active combustion indicators.")
 
         else:
-            # General fallback heuristic fusion
-            if has_industrial_osm and (has_strong_firms or sat_class == "INDUSTRIAL_FIRE"):
-                candidate_class = "INDUSTRIAL_FIRE"
-            elif sat_class == "WILDFIRE" or has_strong_firms:
-                candidate_class = "WILDFIRE"
-            elif firms_score < 0.20 and sat_class == "NON_FIRE":
-                candidate_class = "NON_FIRE"
-            else:
-                candidate_class = "UNKNOWN"
-
+            # Inconclusive fallback only when no positive thermal or satellite signal exists
+            candidate_class = "UNKNOWN"
             raw_composite = (
                 norm_firms_w * firms_score +
                 norm_pers_w * pers_score +
@@ -632,8 +651,8 @@ class EvidenceFusionService:
                 norm_sat_w * sat_score
             )
             candidate_score = round(max(0.0, min(1.0, raw_composite)), 4)
-            evidence_strength = "MODERATE" if candidate_score >= 0.50 else "WEAK"
-            confidence_label = "MEDIUM" if candidate_score >= 0.50 else "LOW"
+            evidence_strength = "WEAK"
+            confidence_label = "LOW"
 
         # S2 High Cloud Guardrail overrides for Industrial Fire
         if sat_quality == "VERY_HIGH_CLOUD" and sat_class == "INDUSTRIAL_FIRE" and not has_industrial_osm:

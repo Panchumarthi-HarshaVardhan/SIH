@@ -29,7 +29,12 @@ from app.services.firms_ingestion_service import (
     load_stored_observations,
     get_latest_firms_observation,
 )
-from app.services.osm_service import fetch_hotspot_osm_context, get_cached_osm_context, DEFAULT_SEARCH_RADIUS_KM
+from app.services.osm_service import (
+    fetch_hotspot_osm_context,
+    get_cached_osm_context,
+    resolve_osm_locality,
+    DEFAULT_SEARCH_RADIUS_KM
+)
 from app.services.persistence_service import detect_persistent_clusters, DEFAULT_CLUSTER_RADIUS_KM
 from app.ml.classifier import classify_thermal_event
 from app.services.risk_service import calculate_risk_score
@@ -90,13 +95,49 @@ app.include_router(agent_router, prefix="/api/agent", tags=["Anomaly Intelligenc
 
 @app.on_event("startup")
 async def startup_event():
-    """Execute configuration validation and environment checks on backend startup."""
+    """Execute configuration validation, ML pre-warming, and cache priming on backend startup."""
     log_startup_configuration(logger.info)
     try:
         from app.db.database import init_db
         init_db()
     except Exception as ex:
         logger.warning(f"Database table initialization skipped or encountered error: {ex}")
+
+    # Pre-warm Sentinel-2 ML inference engine and vision classifier (loaded once in RAM)
+    try:
+        from app.ml.satellite_model.inference import get_inference_engine
+        engine = get_inference_engine()
+        logger.info(f"Pre-warmed Sentinel-2 Multispectral ResNet-18 Inference Engine (ready={engine.is_ready()})")
+    except Exception as ex:
+        logger.warning(f"Could not pre-warm satellite inference engine: {ex}")
+
+    try:
+        from app.services.satellite_classifier import get_satellite_classifier
+        classifier = get_satellite_classifier()
+        logger.info("Pre-warmed Satellite Classifier singleton.")
+    except Exception as ex:
+        logger.warning(f"Could not pre-warm satellite classifier: {ex}")
+
+    # Asynchronously prime the investigation cache for active hotspots in background
+    async def _prime_investigations():
+        try:
+            from app.services.firms_ingestion_service import load_stored_observations
+            from app.services.investigation_service import get_investigation_service
+            obs_list = load_stored_observations()
+            svc = get_investigation_service()
+            logger.info(f"Background pre-warming investigation cache for {len(obs_list)} active hotspots...")
+            for obs in obs_list[:10]:
+                obs_id = obs.get("observation_id")
+                if obs_id:
+                    try:
+                        await svc.investigate_observation(obs_id, force_refresh=False)
+                    except Exception as e:
+                        logger.debug(f"Pre-warm skipped for {obs_id}: {e}")
+            logger.info("Completed investigation cache pre-warming.")
+        except Exception as ex:
+            logger.warning(f"Background investigation cache priming error: {ex}")
+
+    asyncio.create_task(_prime_investigations())
 
 
 @app.get("/")
@@ -414,6 +455,68 @@ async def get_hotspot_context(
         )
 
 
+@app.get("/api/hotspots/reverse-geocode")
+async def reverse_geocode_hotspot(
+    lat: float = Query(..., description="Latitude of hotspot"),
+    lon: float = Query(..., description="Longitude of hotspot")
+):
+    """
+    On-demand OpenStreetMap reverse geocoding with caching and full facility / locality hierarchy.
+    Returns:
+      - Line 1 (Primary Name): Facility name (e.g. Tata Steel) or City / Locality if no facility name exists
+      - Line 2 (Locality / State): Locality and State (e.g. Guntur, Andhra Pradesh or Andhra Pradesh)
+    """
+    if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lon <= 180.0):
+        raise HTTPException(status_code=400, detail="Invalid latitude or longitude coordinates")
+
+    try:
+        # Check if already in Overpass context cache for any known named facilities
+        cached_ctx = get_cached_osm_context(lat, lon, radius_km=5.0)
+        elements = cached_ctx.get("nearby_features", []) if cached_ctx else None
+
+        loc_info = await resolve_osm_locality(lat, lon, elements=elements)
+
+        prim = loc_info.get("primary_name")
+        sec = loc_info.get("secondary_locality")
+        fac = loc_info.get("facility_name")
+
+        # If cached context has a close named facility, prioritize it
+        if cached_ctx and cached_ctx.get("nearest_facility"):
+            n_fac = cached_ctx["nearest_facility"]
+            if n_fac.get("name") and n_fac.get("distance_km", 99) <= 2.5:
+                fac = n_fac["name"]
+                prim = n_fac["name"]
+
+        return {
+            "latitude": lat,
+            "longitude": lon,
+            "primary_name": prim or loc_info.get("locality") or loc_info.get("district") or loc_info.get("state") or "Thermal Anomaly",
+            "secondary_locality": sec or (f"{loc_info.get('district')}, {loc_info.get('state')}" if loc_info.get('district') and loc_info.get('state') else (loc_info.get('state') or "India")),
+            "facility_name": fac,
+            "locality": loc_info.get("locality"),
+            "city": loc_info.get("city"),
+            "district": loc_info.get("district"),
+            "state": loc_info.get("state"),
+            "country": loc_info.get("country", "India"),
+            "display_name": loc_info.get("display_name"),
+        }
+    except Exception as e:
+        logger.warning(f"Reverse geocode error for ({lat}, {lon}): {e}")
+        return {
+            "latitude": lat,
+            "longitude": lon,
+            "primary_name": "Thermal Anomaly",
+            "secondary_locality": "India",
+            "facility_name": None,
+            "locality": None,
+            "city": None,
+            "district": None,
+            "state": None,
+            "country": "India",
+            "display_name": None,
+        }
+
+
 @app.get("/api/persistent-hotspots")
 async def get_persistent_hotspots(
     region: str = Query("india", description="Predefined region: 'india' or 'andhra_pradesh'"),
@@ -612,10 +715,12 @@ async def get_priority_ranking(
 
             try:
                 tasks = [fast_fetch(idx, lat, lon) for idx, _, lat, lon in uncached_candidates]
-                results = await asyncio.wait_for(asyncio.gather(*tasks), timeout=1.0)
-                for idx, res in results:
-                    if res:
-                        osm_contexts[idx] = res
+                results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=4.5)
+                for res in results:
+                    if isinstance(res, tuple) and len(res) == 2:
+                        idx, r_data = res
+                        if r_data:
+                            osm_contexts[idx] = r_data
             except Exception as e:
                 logger.info(f"Live OSM enrichment timed out or skipped: {e}")
 
@@ -639,6 +744,7 @@ async def get_priority_ranking(
                     "context_classification": "UNCLASSIFIED",
                     "closest_critical_asset": None,
                     "closest_industrial": None,
+                    "nearest_facility": None,
                     "category_summary": {},
                     "facility_count": 0,
                     "data_status": "OSM_UNAVAILABLE"
@@ -664,21 +770,30 @@ async def get_priority_ranking(
             nearby_features = [f for f in osm_ctx.get("nearby_features", []) if f.get("distance_km", 999) <= 5.0]
             closest_crit = risk_res.get("closest_critical_asset") or osm_ctx.get("closest_critical_asset")
             closest_ind = osm_ctx.get("closest_industrial")
+            nearest_fac = osm_ctx.get("nearest_facility")
 
             facility_name = None
             facility_dist = None
-            if closest_crit:
-                facility_name = closest_crit.get("name")
-                facility_dist = closest_crit.get("distance_km")
+            if nearest_fac:
+                facility_name = nearest_fac.get("name")
+                facility_dist = nearest_fac.get("distance_km")
             elif closest_ind:
                 facility_name = closest_ind.get("name")
                 facility_dist = closest_ind.get("distance_km")
-            elif osm_ctx.get("context_classification") == "FOREST":
-                facility_name = "Forest / Woodland Terrain (No mapped facilities within 5 km)"
-            elif osm_ctx.get("context_classification") == "AGRICULTURAL":
-                facility_name = "Agricultural Farmland (No mapped facilities within 5 km)"
             else:
-                facility_name = "Thermal Anomaly (5 KM enrichment pending)"
+                facility_dist = None
+                disp_loc = osm_ctx.get("display_locality") or (f"{osm_ctx.get('district')}, {osm_ctx.get('state')}" if osm_ctx.get("district") and osm_ctx.get("state") else None)
+                ctx_class = osm_ctx.get("context_classification") or osm_ctx.get("context")
+                if ctx_class == "FOREST":
+                    facility_name = f"Forest / Woodland Area ({disp_loc})" if disp_loc else "Forest / Woodland Area"
+                elif ctx_class in ["AGRICULTURAL", "RURAL_OR_AGRICULTURAL"]:
+                    facility_name = f"Rural / Agricultural Land ({disp_loc})" if disp_loc else "Rural / Agricultural Land"
+                elif disp_loc:
+                    facility_name = f"Unclassified Open Land ({disp_loc})"
+                elif osm_ctx.get("data_status") == "READY":
+                    facility_name = "Unclassified Open Land (No industrial assets within 5km)"
+                else:
+                    facility_name = "Thermal Anomaly (5km OSM query pending)"
 
             # Recommended action based on deterministic priority
             pri_level = risk_res["risk_level"]
@@ -692,6 +807,21 @@ async def get_priority_ranking(
                 rec_action = "Periodic monitoring; no immediate intervention required"
 
             data_status = osm_ctx.get("data_status") or ("READY" if nearby_features else "OSM_UNAVAILABLE")
+
+            prim_disp = (
+                (nearest_fac or {}).get("name")
+                or (closest_ind or {}).get("name")
+                or osm_ctx.get("primary_name")
+                or osm_ctx.get("locality")
+                or osm_ctx.get("district")
+                or osm_ctx.get("state")
+                or facility_name
+            )
+            sec_disp = (
+                osm_ctx.get("secondary_locality")
+                or osm_ctx.get("display_locality")
+                or (f"{osm_ctx.get('district')}, {osm_ctx.get('state')}" if osm_ctx.get('district') and osm_ctx.get('state') else (osm_ctx.get('state') or "India"))
+            )
 
             ranked_items.append({
                 "rank": 0,
@@ -708,6 +838,10 @@ async def get_priority_ranking(
                 "classification": risk_res["classification"].replace("_", " ").title(),
                 "industrial_facility": facility_name,
                 "industrial_distance_km": facility_dist,
+                "nearest_facility": nearest_fac or closest_ind,
+                "primary_name": prim_disp,
+                "secondary_locality": sec_disp,
+                "display_locality": osm_ctx.get("display_locality"),
                 "closest_critical_asset": closest_crit,
                 "exposed_assets_count": len(nearby_features),
                 "exposure_summary": osm_ctx.get("category_summary", {}),
@@ -765,7 +899,7 @@ async def enrich_hotspot_osm(
     Strictly bounded with timeout; populates in-memory cache upon completion.
     """
     try:
-        ctx = await asyncio.wait_for(fetch_hotspot_osm_context(lat=lat, lon=lon, radius_km=radius_km), timeout=2.0)
+        ctx = await asyncio.wait_for(fetch_hotspot_osm_context(lat=lat, lon=lon, radius_km=radius_km), timeout=5.0)
         return {
             "hotspot_id": hotspot_id,
             "latitude": lat,
@@ -773,8 +907,18 @@ async def enrich_hotspot_osm(
             "data_status": ctx.get("data_status", "OSM_UNAVAILABLE"),
             "facility_count": ctx.get("facility_count", 0),
             "nearby_features": ctx.get("nearby_features", []),
+            "nearby_facilities": ctx.get("nearby_facilities", []),
+            "nearest_facility": ctx.get("nearest_facility"),
             "closest_critical_asset": ctx.get("closest_critical_asset"),
+            "closest_industrial": ctx.get("closest_industrial"),
             "category_summary": ctx.get("category_summary", {}),
+            "context": ctx.get("context"),
+            "context_classification": ctx.get("context_classification"),
+            "primary_name": ctx.get("primary_name"),
+            "secondary_locality": ctx.get("secondary_locality"),
+            "display_locality": ctx.get("display_locality"),
+            "district": ctx.get("district"),
+            "state": ctx.get("state"),
         }
     except Exception as e:
         logger.warning(f"On-demand OSM enrichment failed for {hotspot_id}: {e}")
@@ -785,8 +929,18 @@ async def enrich_hotspot_osm(
             "data_status": "OSM_UNAVAILABLE",
             "facility_count": 0,
             "nearby_features": [],
+            "nearby_facilities": [],
+            "nearest_facility": None,
             "closest_critical_asset": None,
+            "closest_industrial": None,
             "category_summary": {},
+            "context": "UNCLASSIFIED_OPEN_LAND",
+            "context_classification": "UNCLASSIFIED_OPEN_LAND",
+            "primary_name": None,
+            "secondary_locality": None,
+            "display_locality": None,
+            "district": None,
+            "state": None,
         }
 
 

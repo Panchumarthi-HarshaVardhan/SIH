@@ -15,16 +15,14 @@ import {
   ThermalAlert,
   AppView,
   LatestFirmsResponse,
-  HotspotTelemetryItem,
 } from './types/hotspot';
 import { getApiUrl, fetchLatestFirmsObservation, getDecisionSupport, DEMO_SCENARIO_PRESETS } from './config/api';
-import { LandingPage } from './components/landing/LandingPage';
 import { AnomalyIntelligenceAgentDrawer } from './components/agent';
 import { AuthProvider } from './auth';
 import { AuthGate } from './components/auth/AuthGate';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<AppView>('landing');
+  const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const [region, setRegion] = useState<string>('india');
   const [customBbox, setCustomBbox] = useState<string>('');
 
@@ -158,6 +156,11 @@ function AppContent() {
       const res = await fetch(getApiUrl(`/api/hotspots/${encodeURIComponent(hotspotId)}/enrich-osm?lat=${lat}&lon=${lon}&radius_km=5.0`));
       if (res.ok) {
         const enriched = await res.json();
+        const resolvedFacility = enriched.nearest_facility?.name
+          || enriched.closest_industrial?.name
+          || (enriched.display_locality ? `Unclassified Open Land (${enriched.display_locality})` : 'No industrial assets within 5km');
+        const resolvedDistance = enriched.nearest_facility?.distance_km ?? enriched.closest_industrial?.distance_km ?? null;
+
         setPriorityItems((prev) =>
           prev.map((item) => {
             if (item.cluster_id === hotspotId || item.hotspot_id === hotspotId) {
@@ -166,6 +169,10 @@ function AppContent() {
                 data_status: enriched.data_status,
                 nearby_features: enriched.nearby_features,
                 closest_critical_asset: enriched.closest_critical_asset,
+                nearest_facility: enriched.nearest_facility,
+                display_locality: enriched.display_locality,
+                industrial_facility: resolvedFacility,
+                industrial_distance_km: resolvedDistance,
                 exposed_assets_count: enriched.facility_count,
                 exposure_summary: enriched.category_summary,
               };
@@ -180,6 +187,10 @@ function AppContent() {
               data_status: enriched.data_status,
               nearby_features: enriched.nearby_features,
               closest_critical_asset: enriched.closest_critical_asset,
+              nearest_facility: enriched.nearest_facility,
+              display_locality: enriched.display_locality,
+              industrial_facility: resolvedFacility,
+              industrial_distance_km: resolvedDistance,
               exposed_assets_count: enriched.facility_count,
               exposure_summary: enriched.category_summary,
             };
@@ -235,12 +246,14 @@ function AppContent() {
     return () => clearInterval(interval);
   }, [handleRefreshAll]);
 
-  // Selection Handlers
+  // Selection Handlers - Decoupled from Investigation Panel Drawer State
   const handleSelectHotspot = (h: Hotspot) => {
     setSelectedHotspot(h);
     setSelectedCluster(null);
     setSelectedAlert(null);
-    setShowDetailPanel(true);
+    setSelectedPriorityIncident(null);
+    // Preserves showDetailPanel state: if already open, it stays open for the new anomaly.
+    // If closed, it stays closed.
     if (h.latitude && h.longitude) {
       setMapCenterCoords([h.latitude, h.longitude]);
       setMapZoomLevel(11);
@@ -252,7 +265,7 @@ function AppContent() {
     setSelectedCluster(c);
     setSelectedHotspot(null);
     setSelectedAlert(null);
-    setShowDetailPanel(true);
+    setSelectedPriorityIncident(null);
     if (c.center_latitude && c.center_longitude) {
       setMapCenterCoords([c.center_latitude, c.center_longitude]);
       setMapZoomLevel(11);
@@ -265,7 +278,7 @@ function AppContent() {
     setSelectedAlert(a);
     setSelectedHotspot(null);
     setSelectedCluster(null);
-    setShowDetailPanel(true);
+    setSelectedPriorityIncident(null);
     if (a.latitude && a.longitude) {
       setMapCenterCoords([a.latitude, a.longitude]);
       setMapZoomLevel(11);
@@ -292,7 +305,6 @@ function AppContent() {
     setSelectedHotspot(fallbackHotspot);
     setSelectedCluster(null);
     setSelectedAlert(null);
-    setShowDetailPanel(true);
     if (p.latitude && p.longitude) {
       setMapCenterCoords([p.latitude, p.longitude]);
       setMapZoomLevel(12);
@@ -334,9 +346,27 @@ function AppContent() {
     loadDecisionSupportForMap(scenario.observation_id, scenario.coordinates[0], scenario.coordinates[1]);
   };
 
-  const handleCloseDetailPanel = () => {
+  // Explicit Investigation Panel Controls: Open panel without altering selection
+  const handleOpenInvestigation = useCallback(() => {
+    setShowDetailPanel(true);
+  }, []);
+
+  // Closing the Investigation Panel ONLY closes the drawer.
+  // It NEVER deselects the anomaly, unsets selection, or resets the map zoom/center.
+  const handleCloseDetailPanel = useCallback(() => {
     setShowDetailPanel(false);
-  };
+  }, []);
+
+  // Explicit anomaly deselection and map reset (triggered ONLY by clicking the map background or explicit reset)
+  const handleDeselectAnomaly = useCallback(() => {
+    setSelectedHotspot(null);
+    setSelectedCluster(null);
+    setSelectedAlert(null);
+    setSelectedPriorityIncident(null);
+    setShowDetailPanel(false);
+    setMapCenterCoords([20.5937, 78.9629]);
+    setMapZoomLevel(5);
+  }, []);
 
   const handleAlertStatusChange = async (alertId: string, newStatus: ThermalAlert['status'], notes?: string) => {
     try {
@@ -352,39 +382,6 @@ function AppContent() {
       console.error('Failed to update alert status:', e);
     }
   };
-
-  const handleSelectLandingHotspot = (item: HotspotTelemetryItem) => {
-    const demoHotspot: Hotspot = {
-      observation_id: item.id,
-      latitude: item.latitude,
-      longitude: item.longitude,
-      brightness: item.brightness,
-      confidence: typeof item.confidence === 'string' ? item.confidence : `${item.confidence}%`,
-      frp: item.frp,
-      acquired_at: item.timestamp,
-      satellite: item.satellite,
-      instrument: item.instrument,
-      source: 'NASA FIRMS',
-    };
-
-    setSelectedHotspot(demoHotspot);
-    setSelectedCluster(null);
-    setSelectedAlert(null);
-    setMapCenterCoords([item.latitude, item.longitude]);
-    setMapZoomLevel(12);
-    setShowDetailPanel(true);
-    loadDecisionSupportForMap(item.id, item.latitude, item.longitude);
-    setCurrentView('dashboard');
-  };
-
-  if (currentView === 'landing') {
-    return (
-      <LandingPage
-        onLaunchDashboard={() => setCurrentView('dashboard')}
-        onSelectHotspotForInvestigation={handleSelectLandingHotspot}
-      />
-    );
-  }
 
   return (
     <div className="app-layout">
@@ -407,17 +404,24 @@ function AppContent() {
             loadingClusters={loadingClusters}
             loadingPriority={loadingPriority}
             lastUpdated={lastUpdated}
+            selectedHotspot={selectedHotspot}
+            selectedCluster={selectedCluster}
+            selectedAlert={selectedAlert}
+            selectedPriorityIncident={selectedPriorityIncident}
             onSelectHotspot={handleSelectHotspot}
             onSelectCluster={handleSelectCluster}
             onSelectAlert={handleSelectAlert}
+            onSelectPriorityIncident={handleSelectPriorityIncident}
+            onOpenInvestigation={handleOpenInvestigation}
+            onDeselectAnomaly={handleDeselectAnomaly}
             onRefreshAll={handleRefreshAll}
             refreshing={refreshing}
             onNavigateView={setCurrentView}
-            selectedPriorityIncident={selectedPriorityIncident}
-            onSelectPriorityIncident={handleSelectPriorityIncident}
             onEnrichHotspot={handleEnrichHotspot}
             basemap={basemap}
             onBasemapChange={setBasemap}
+            mapCenter={mapCenterCoords}
+            mapZoom={mapZoomLevel}
           />
         )}
 
@@ -432,6 +436,7 @@ function AppContent() {
             onSelectHotspot={handleSelectHotspot}
             onSelectCluster={handleSelectCluster}
             onSelectAlert={handleSelectAlert}
+            onOpenInvestigation={handleOpenInvestigation}
           />
         )}
 
@@ -449,12 +454,14 @@ function AppContent() {
               onSelectHotspot={handleSelectHotspot}
               onSelectCluster={handleSelectCluster}
               onSelectAlert={handleSelectAlert}
+              onOpenInvestigation={handleOpenInvestigation}
+              onMapBackgroundClick={handleDeselectAnomaly}
               threatZones={mapThreatZones}
               exposedAssets={mapExposedAssets}
               mapCenter={mapCenterCoords}
               mapZoom={mapZoomLevel}
-              center={[20.5937, 78.9629]}
-              zoom={5}
+              center={mapCenterCoords}
+              zoom={mapZoomLevel}
               basemap={basemap}
               onBasemapChange={setBasemap}
             />

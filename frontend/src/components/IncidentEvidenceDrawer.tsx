@@ -27,6 +27,9 @@ export interface IncidentDrawerData {
   risk_level: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
   classification: string;
   industrial_facility?: string | null;
+  primary_name?: string | null;
+  secondary_locality?: string | null;
+  display_locality?: string | null;
   industrial_distance_km?: number | null;
   closest_critical_asset?: OsmFeature | null;
   exposed_assets_count?: number;

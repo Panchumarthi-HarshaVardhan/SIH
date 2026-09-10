@@ -1,17 +1,22 @@
 import {
   faArrowsRotate,
   faBolt,
-  faCheck,
   faCircleCheck,
+  faCompass,
   faEye,
   faFileLines,
   faFire,
+  faHouse,
   faIndustry,
   faInfoCircle,
+  faLocationDot,
   faMagnifyingGlass,
   faRobot,
   faSatellite,
   faScaleBalanced,
+  faSeedling,
+  faTrain,
+  faTree,
   faTriangleExclamation,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
@@ -28,6 +33,7 @@ import { getInvestigation } from '../config/api';
 import { SatelliteEvidenceCard } from './SatelliteEvidenceCard';
 import { DecisionSupportPanel } from './DecisionSupportPanel';
 import { ErrorBoundary } from './ErrorBoundary';
+import { InvestigationSkeleton } from './InvestigationSkeleton';
 
 export interface InvestigationPanelProps {
   observationId?: string | null;
@@ -51,31 +57,31 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   // Determine primary observation ID
   const rawId =
     propObservationId ||
-    priorityIncident?.hotspot_id ||
-    priorityIncident?.cluster_id ||
     hotspot?.observation_id ||
-    (alert?.cluster_id && alert.cluster_id.startsWith('FIRMS_')
-      ? alert.cluster_id.replace('FIRMS_', '')
-      : undefined) ||
-    alert?.cluster_id ||
     (cluster?.observations && cluster.observations.length > 0
       ? cluster.observations[0].observation_id
       : undefined) ||
     cluster?.cluster_id ||
+    (alert?.cluster_id && alert.cluster_id.startsWith('FIRMS_')
+      ? alert.cluster_id.replace('FIRMS_', '')
+      : undefined) ||
+    alert?.cluster_id ||
+    priorityIncident?.hotspot_id ||
+    priorityIncident?.cluster_id ||
     (hotspot ? `HOTSPOT_${hotspot.latitude.toFixed(3)}_${hotspot.longitude.toFixed(3)}` : undefined);
 
   const cleanObservationId = rawId?.trim();
-
-  // Coordinates fallback
-  const lat = priorityIncident?.latitude ?? hotspot?.latitude ?? cluster?.center_latitude ?? alert?.latitude ?? 22.6789;
-  const lon = priorityIncident?.longitude ?? hotspot?.longitude ?? cluster?.center_longitude ?? alert?.longitude ?? 80.54321;
-  const alertId = alert?.alert_id;
 
   // Investigation state
   const [data, setData] = useState<InvestigationResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Coordinates: prioritize response detection coordinates, then selected entity, then priority/alert
+  const lat = data?.detection?.latitude ?? hotspot?.latitude ?? cluster?.center_latitude ?? alert?.latitude ?? priorityIncident?.latitude ?? 20.0;
+  const lon = data?.detection?.longitude ?? hotspot?.longitude ?? cluster?.center_longitude ?? alert?.longitude ?? priorityIncident?.longitude ?? 78.0;
+  const alertId = alert?.alert_id;
   const [activeWorkflowTab, setActiveWorkflowTab] = useState<'INVESTIGATE' | 'DECIDE'>('INVESTIGATE');
   const [provenanceExpanded, setProvenanceExpanded] = useState<boolean>(false);
   const [actionNotes, setActionNotes] = useState<string>('');
@@ -83,8 +89,10 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
 
   // Monotonically increasing request sequence tracking & loaded ID tracking
   const requestIdRef = useRef<number>(0);
-  const loadedObservationIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Derived state: show skeleton whenever loading OR when neither real data nor error has arrived
+  const shouldShowSkeleton = loading || (!data && !error);
 
   const fetchInvestigationData = useCallback(
     async (forceRefresh: boolean = false) => {
@@ -95,8 +103,8 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
         return;
       }
 
-      // If forcing refresh, keep previous evidence visible while refreshing spinner spins
-      // If initial/new incident selection, clear immediately so previous evidence does not linger
+      // If forcing refresh, keep previous evidence visible while refreshing indicator spins
+      // If initial/new incident selection, clear data so skeleton appears immediately
       if (!forceRefresh) {
         setData(null);
         setLoading(true);
@@ -122,7 +130,7 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
           return;
         }
         setData(res);
-        loadedObservationIdRef.current = cleanObservationId;
+        setError(null);
       } catch (err: any) {
         if (err.name === 'AbortError') {
           return;
@@ -227,6 +235,48 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
     }
   };
 
+  const getContextBadgeClass = (contextClass?: string) => {
+    switch (contextClass?.toUpperCase()) {
+      case 'INDUSTRIAL_CONTEXT':
+        return 'context-badge-industrial';
+      case 'INFRASTRUCTURE_CONTEXT':
+        return 'context-badge-infrastructure';
+      case 'WILDFIRE_CONTEXT':
+        return 'context-badge-wildfire';
+      case 'AGRICULTURAL_CONTEXT':
+        return 'context-badge-agricultural';
+      case 'TRANSPORT_CONTEXT':
+        return 'context-badge-transport';
+      case 'RESIDENTIAL_CONTEXT':
+        return 'context-badge-residential';
+      case 'MIXED_CONTEXT':
+        return 'context-badge-mixed';
+      default:
+        return 'context-badge-noclear';
+    }
+  };
+
+  const getFeatureIcon = (category?: string) => {
+    switch (category?.toUpperCase()) {
+      case 'INDUSTRIAL':
+        return faIndustry;
+      case 'INFRASTRUCTURE':
+      case 'CRITICAL_INFRASTRUCTURE':
+        return faBolt;
+      case 'ENVIRONMENTAL':
+        return faTree;
+      case 'AGRICULTURAL':
+        return faSeedling;
+      case 'TRANSPORT':
+        return faTrain;
+      case 'RESIDENTIAL':
+        return faHouse;
+      default:
+        return faLocationDot;
+    }
+  };
+
+
   return (
     <div className="incident-detail-drawer-overlay" onClick={onClose}>
       <div className="incident-detail-drawer" onClick={(e) => e.stopPropagation()}>
@@ -328,68 +378,38 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
           {/* ========================================================================= */}
           {activeWorkflowTab === 'INVESTIGATE' && (
             <>
-              {/* LOADING STATE */}
-              {loading && (
-                <div className="investigation-loading-skeleton" role="status" aria-live="polite">
-              <div className="skeleton-spinner-wrap">
-                <div className="skeleton-spinner" />
-                <div className="skeleton-title">Investigating Thermal Anomaly...</div>
-                <div className="skeleton-subtitle">Executing multi-source evidence fusion pipeline</div>
-              </div>
-              <div className="skeleton-steps-list">
-                <div className="skeleton-step step-done">
-                  <span className="step-icon"><FontAwesomeIcon icon={faCheck} /></span>
-                  <span>NASA FIRMS Radiometric Anomaly</span>
-                </div>
-                <div className="skeleton-step step-done">
-                  <span className="step-icon"><FontAwesomeIcon icon={faCheck} /></span>
-                  <span>Multi-Pass Spatial-Temporal Persistence</span>
-                </div>
-                <div className="skeleton-step step-active">
-                  <span className="step-icon">◐</span>
-                  <span>OpenStreetMap Industrial Geospatial Context</span>
-                </div>
-                <div className="skeleton-step step-active">
-                  <span className="step-icon">◐</span>
-                  <span>Copernicus Sentinel-2 6-Band Multispectral Vision</span>
-                </div>
-              </div>
-            </div>
-          )}
+              {/* SKELETON LOADING STATE */}
+              {shouldShowSkeleton && <InvestigationSkeleton />}
 
-          {/* ========================================================================= */}
-          {/* ERROR STATE */}
-          {/* ========================================================================= */}
-          {!loading && error && (
-            <div className="investigation-error-banner" role="alert">
-              <div className="error-icon"><FontAwesomeIcon icon={faTriangleExclamation} /></div>
-              <div className="error-content">
-                <h4 className="error-heading">Investigation Temporarily Unavailable</h4>
-                <p className="error-message">{error}</p>
-                <div className="error-actions">
-                  <button
-                    type="button"
-                    className="btn-retry-investigation"
-                    onClick={() => fetchInvestigationData(false)}
-                  >
-                    <FontAwesomeIcon icon={faArrowsRotate} /> Retry Investigation
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-retry-force"
-                    onClick={() => fetchInvestigationData(true)}
-                  >
-                    <FontAwesomeIcon icon={faBolt} /> Force Live Query
-                  </button>
+              {/* ERROR STATE */}
+              {!shouldShowSkeleton && error && (
+                <div className="investigation-error-banner" role="alert">
+                  <div className="error-icon"><FontAwesomeIcon icon={faTriangleExclamation} /></div>
+                  <div className="error-content">
+                    <h4 className="error-heading">Investigation Temporarily Unavailable</h4>
+                    <p className="error-message">{error}</p>
+                    <div className="error-actions">
+                      <button
+                        type="button"
+                        className="btn-retry-investigation"
+                        onClick={() => fetchInvestigationData(false)}
+                      >
+                        <FontAwesomeIcon icon={faArrowsRotate} /> Retry Investigation
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-retry-force"
+                        onClick={() => fetchInvestigationData(true)}
+                      >
+                        <FontAwesomeIcon icon={faBolt} /> Force Live Query
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* ========================================================================= */}
-          {/* MAIN EVIDENCE CHAIN VIEW (RENDERED ON HTTP 200) */}
-          {/* ========================================================================= */}
-          {!loading && data && (
+              {/* MAIN EVIDENCE CHAIN VIEW (RENDERED ON HTTP 200) */}
+              {!shouldShowSkeleton && data && (
             <>
               {/* WARNINGS BANNER (IF ANY) */}
               {data.warnings && data.warnings.length > 0 && (
@@ -503,6 +523,150 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* ========================================================================= */}
+              {/* LOCATION CONTEXT ASSESSMENT (Triggered when UNKNOWN or when location_context is available) */}
+              {/* ========================================================================= */}
+              {data.location_context && (
+                <div className="investigation-section location-context-section">
+                  <div className="section-header">
+                    <span className="section-number">LOC</span>
+                    <span className="section-icon"><FontAwesomeIcon icon={faCompass} /></span>
+                    <h3 className="section-title">LOCATION CONTEXT ASSESSMENT</h3>
+                    <span className={`section-tag ${getContextBadgeClass(data.location_context.classification)}`}>
+                      {data.location_context.classification.replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  {data.fusion.candidate_class === 'UNKNOWN' && (
+                    <div className="location-context-alert-banner">
+                      <FontAwesomeIcon icon={faInfoCircle} /> Primary satellite & FIRMS fusion cannot confidently classify this incident. Automated 5 km OpenStreetMap location context analysis has been performed around exact coordinates ({lat.toFixed(4)}°N, {lon.toFixed(4)}°E).
+                    </div>
+                  )}
+
+                  <div className="location-context-card-body">
+                    {/* Primary Overview Grid */}
+                    <div className="location-context-overview-grid">
+                      <div className="context-overview-box">
+                        <span className="context-box-label">Contextual Classification</span>
+                        <div className="context-primary-val">
+                          {data.location_context.classification.replace('_', ' ')}
+                        </div>
+                        <div className="context-subtext">
+                          Confidence: <strong>{data.location_context.confidence_label}</strong> ({Math.round(data.location_context.confidence * 100)}%)
+                        </div>
+                        <div className="context-meter-track">
+                          <div
+                            className="context-meter-fill"
+                            style={{ width: `${Math.min(100, Math.max(8, Math.round(data.location_context.confidence * 100)))}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="context-overview-box">
+                        <span className="context-box-label">Geographic Locality</span>
+                        <div className="context-locality-val">
+                          {data.location_context.locality || 'Area Unmapped'}
+                          {data.location_context.district ? `, ${data.location_context.district}` : ''}
+                        </div>
+                        <div className="context-subtext">
+                          {data.location_context.state ? `${data.location_context.state}, ` : ''}{data.location_context.country || 'India'}
+                        </div>
+                        <div className="context-radius-tag">
+                          <FontAwesomeIcon icon={faLocationDot} /> Analysis Radius: {data.location_context.radius_km.toFixed(1)} km
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Possible Source / Likely Cause Card */}
+                    {data.location_context.possible_cause && (
+                      <div className="possible-cause-card">
+                        <div className="possible-cause-header">
+                          <span className="possible-cause-title">
+                            <FontAwesomeIcon icon={faInfoCircle} /> POSSIBLE SOURCE / LIKELY CAUSE
+                          </span>
+                          <span className="possible-cause-category-badge">
+                            {data.location_context.possible_cause.category.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <div className="possible-cause-body">
+                          <div className="possible-source-main">
+                            <span className="possible-source-label">Likely Source:</span>
+                            <strong className="possible-source-name">{data.location_context.possible_cause.likely_source}</strong>
+                            {data.location_context.possible_cause.distance_km !== null && data.location_context.possible_cause.distance_km !== undefined && (
+                              <span className="possible-source-dist-tag">
+                                {data.location_context.possible_cause.distance_km < 1
+                                  ? `${(data.location_context.possible_cause.distance_km * 1000).toFixed(0)} m`
+                                  : `${data.location_context.possible_cause.distance_km.toFixed(2)} km`} away
+                              </span>
+                            )}
+                          </div>
+                          <p className="possible-cause-assessment-text">
+                            {data.location_context.possible_cause.assessment}
+                          </p>
+                          <div className="possible-cause-disclaimer-note">
+                            Contextual assessment only — proximity provides geographic plausibility but does not confirm causation.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location Evidence (Ranked features within 5 km) */}
+                    {data.location_context.nearby_features && data.location_context.nearby_features.length > 0 && (
+                      <div className="location-evidence-block">
+                        <h4 className="location-evidence-heading">
+                          <FontAwesomeIcon icon={faLocationDot} /> LOCATION EVIDENCE (WITHIN 5 KM)
+                        </h4>
+                        <div className="nearby-features-list">
+                          {data.location_context.nearby_features.slice(0, 8).map((feat, idx) => (
+                            <div key={idx} className="nearby-feature-row">
+                              <div className="feature-row-icon">
+                                <FontAwesomeIcon icon={getFeatureIcon(feat.category)} />
+                              </div>
+                              <div className="feature-row-main">
+                                <div className="feature-row-name">
+                                  {feat.name}
+                                  <span className="feature-row-type">• {feat.type}</span>
+                                </div>
+                                <div className="feature-row-sub">
+                                  Category: <span className="feature-cat-text">{feat.category}</span>
+                                  {feat.ranking_score > 0 && (
+                                    <span className="feature-score-text">• Relevance Score: {(feat.ranking_score * 100).toFixed(0)}%</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="feature-row-meta">
+                                <span className="feature-distance-val">
+                                  {feat.distance_km < 1
+                                    ? `${(feat.distance_km * 1000).toFixed(0)} m`
+                                    : `${feat.distance_km.toFixed(2)} km`}
+                                </span>
+                                <span className={`feature-relevance-pill relevance-${feat.relevance?.toLowerCase()}`}>
+                                  {feat.relevance} RELEVANCE
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Why this assessment? */}
+                    {data.location_context.reasoning && data.location_context.reasoning.length > 0 && (
+                      <div className="context-reasoning-wrap">
+                        <h4 className="reasoning-title">Why this assessment?</h4>
+                        <ul className="reasoning-list">
+                          {data.location_context.reasoning.map((r, idx) => (
+                            <li key={idx} className="reasoning-item">
+                              {r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* ========================================================================= */}
               {/* CARD 2: THERMAL DETECTION (NASA FIRMS) */}

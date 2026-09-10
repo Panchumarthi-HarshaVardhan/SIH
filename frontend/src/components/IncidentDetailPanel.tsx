@@ -28,17 +28,17 @@ export function IncidentDetailPanel({
   onStatusChange,
 }: IncidentDetailPanelProps) {
   const observationId =
-    priorityIncident?.hotspot_id ||
-    priorityIncident?.cluster_id ||
     hotspot?.observation_id ||
-    (alert?.cluster_id && alert.cluster_id.startsWith('FIRMS_')
-      ? alert.cluster_id.replace('FIRMS_', '')
-      : undefined) ||
-    alert?.cluster_id ||
     (cluster?.observations && cluster.observations.length > 0
       ? cluster.observations[0].observation_id
       : undefined) ||
-    cluster?.cluster_id;
+    cluster?.cluster_id ||
+    priorityIncident?.hotspot_id ||
+    priorityIncident?.cluster_id ||
+    (alert?.cluster_id && alert.cluster_id.startsWith('FIRMS_')
+      ? alert.cluster_id.replace('FIRMS_', '')
+      : undefined) ||
+    alert?.cluster_id;
 
   return (
     <InvestigationPanel

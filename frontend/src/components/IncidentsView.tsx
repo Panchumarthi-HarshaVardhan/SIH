@@ -22,6 +22,7 @@ interface IncidentsViewProps {
   onSelectHotspot: (h: Hotspot) => void;
   onSelectCluster: (c: PersistentCluster) => void;
   onSelectAlert: (a: ThermalAlert) => void;
+  onOpenInvestigation?: () => void;
 }
 
 export function IncidentsView({
@@ -33,6 +34,7 @@ export function IncidentsView({
   onSelectHotspot,
   onSelectCluster,
   onSelectAlert,
+  onOpenInvestigation,
 }: IncidentsViewProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'high_risk' | 'industrial' | 'persistent'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -320,6 +322,7 @@ export function IncidentsView({
                           e.stopPropagation();
                           if (row.clusterObj) onSelectCluster(row.clusterObj);
                           else if (row.alertObj) onSelectAlert(row.alertObj);
+                          onOpenInvestigation && onOpenInvestigation();
                         }}
                       >
                         <FontAwesomeIcon icon={faMagnifyingGlass} /> Investigate

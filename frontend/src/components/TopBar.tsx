@@ -3,6 +3,7 @@ import { AppView } from '../types/hotspot';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFire,
+  faChartSimple,
   faTriangleExclamation,
   faMap,
   faBolt,
@@ -37,21 +38,11 @@ export const TopBar: React.FC<TopBarProps> = ({ currentView, onViewChange }) => 
       <nav className="topbar-nav" aria-label="Main Navigation">
         <button
           type="button"
-          className={`nav-tab cinematic-tab ${currentView === 'landing' ? 'active' : ''}`}
-          onClick={() => onViewChange('landing')}
-          title="Switch to 3D Cinematic Observation Experience"
-        >
-          <span className="nav-icon">🪐</span>
-          <span className="nav-label">CINEMATIC VIEW</span>
-        </button>
-
-        <button
-          type="button"
           className={`nav-tab ${currentView === 'dashboard' ? 'active' : ''}`}
           onClick={() => onViewChange('dashboard')}
         >
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">DASHBOARD</span>
+          <FontAwesomeIcon icon={faChartSimple} className="nav-fa-icon" />
+          <span className="nav-label">Dashboard</span>
         </button>
 
           <button
