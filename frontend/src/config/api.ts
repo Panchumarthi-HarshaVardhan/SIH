@@ -120,9 +120,6 @@ export async function getInvestigation(
 
       const data: import('../types/hotspot').InvestigationResponse = await response.json();
       return data;
-    } catch (err) {
-      inFlightInvestigations.delete(cleanId);
-      throw err;
     } finally {
       // Clean up in-flight registry
       inFlightInvestigations.delete(cleanId);

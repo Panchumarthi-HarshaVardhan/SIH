@@ -156,6 +156,10 @@ export interface PriorityRankingItem {
   industrial_facility: string;
   industrial_distance_km: number | null;
   closest_critical_asset?: OsmFeature | null;
+  nearest_facility?: OsmFeature | null;
+  primary_name?: string | null;
+  secondary_locality?: string | null;
+  display_locality?: string | null;
   exposed_assets_count?: number;
   exposure_summary?: Record<string, number>;
   nearby_features?: OsmFeature[];
@@ -535,7 +539,7 @@ export interface SimulationResultResponse {
   disclaimer: string;
 }
 
-export type AppView = 'landing' | 'dashboard' | 'incidents' | 'map' | 'status' | 'settings';
+export type AppView = 'dashboard' | 'incidents' | 'map' | 'status' | 'settings';
 
 export interface HotspotTelemetryItem {
   id: string;
@@ -726,8 +730,49 @@ export interface Provenance {
   investigated_at: string;
 }
 
+export interface NearbyFeature {
+  type: string;
+  name: string;
+  distance_km: number;
+  relevance: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  category: string;
+  ranking_score: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  osm_id?: string | null;
+}
+
+export interface PossibleCause {
+  category: string;
+  likely_source: string;
+  assessment: string;
+  confidence: number;
+  confidence_label: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNAVAILABLE' | string;
+  distance_km?: number | null;
+}
+
+export interface LocationContext {
+  classification: string;
+  confidence: number;
+  confidence_label: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNAVAILABLE' | string;
+  radius_km: number;
+  locality?: string | null;
+  district?: string | null;
+  state?: string | null;
+  country: string;
+  primary_context: string;
+  secondary_context?: string | null;
+  primary_nearby_feature?: string | null;
+  primary_distance_km?: number | null;
+  reasoning: string[];
+  nearby_features: NearbyFeature[];
+  possible_cause?: PossibleCause | null;
+  status: string;
+}
+
 export interface InvestigationResponse {
   observation_id: string;
+  status?: string;
   detection: DetectionEvidence;
   persistence: PersistenceEvidence;
   industrial_context: IndustrialContextEvidence;
@@ -740,6 +785,9 @@ export interface InvestigationResponse {
   provenance: Provenance;
   warnings: string[];
   disclaimers: string[];
+  location_context?: LocationContext | null;
+  nearby_features?: NearbyFeature[];
+  possible_cause?: PossibleCause | null;
 }
 
 export interface PriorityResult {

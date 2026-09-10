@@ -116,6 +116,50 @@ class Provenance(BaseModel):
     )
 
 
+
+class NearbyFeature(BaseModel):
+    type: str = Field(..., description="Specific feature type (e.g. Industrial Facility, Electrical Substation, Forest)")
+    name: str = Field(..., description="Feature name or description")
+    distance_km: float = Field(..., description="Haversine distance from incident in km")
+    relevance: str = Field("MEDIUM", description="Relevance level: HIGH, MEDIUM, LOW")
+    category: str = Field(..., description="Broad category: INDUSTRIAL, INFRASTRUCTURE, TRANSPORT, ENVIRONMENTAL, AGRICULTURAL, RESIDENTIAL")
+    ranking_score: float = Field(0.0, description="Deterministic composite ranking score [0.0, 1.0]")
+    latitude: Optional[float] = Field(None, description="Feature latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Feature longitude coordinate")
+    osm_id: Optional[str] = Field(None, description="OSM element ID")
+
+
+class PossibleCause(BaseModel):
+    category: str = Field(..., description="Plausible source category: INDUSTRIAL_ACTIVITY, ENERGY_INFRASTRUCTURE, NATURAL_VEGETATION, AGRICULTURAL_ACTIVITY, TRANSPORT_CORRIDOR, RESIDENTIAL_COMMUNITY, UNRESOLVED")
+    likely_source: str = Field(..., description="Specific plausible source (e.g. Nearby industrial facility, Forest / woodland area)")
+    assessment: str = Field(..., description="Scientifically qualified contextual assessment explaining location relevance")
+    confidence: float = Field(..., description="Contextual confidence score in [0.0, 1.0]")
+    confidence_label: str = Field("MEDIUM", description="Qualitative confidence label: HIGH, MEDIUM, LOW, UNAVAILABLE")
+    distance_km: Optional[float] = Field(None, description="Distance to closest supporting feature in km")
+
+
+class LocationContext(BaseModel):
+    classification: str = Field(
+        ...,
+        description="Location context classification: INDUSTRIAL_CONTEXT, INFRASTRUCTURE_CONTEXT, WILDFIRE_CONTEXT, AGRICULTURAL_CONTEXT, TRANSPORT_CONTEXT, RESIDENTIAL_CONTEXT, MIXED_CONTEXT, NO_CLEAR_CONTEXT"
+    )
+    confidence: float = Field(0.0, description="Overall contextual confidence score in [0.0, 1.0]")
+    confidence_label: str = Field("MEDIUM", description="Confidence tier: HIGH, MEDIUM, LOW, UNAVAILABLE")
+    radius_km: float = Field(5.0, description="OSM search radius in kilometers (strictly <= 5.0 km)")
+    locality: Optional[str] = Field(None, description="Locality, town, village, or area name")
+    district: Optional[str] = Field(None, description="Administrative district / county")
+    state: Optional[str] = Field(None, description="State or province")
+    country: str = Field("India", description="Country")
+    primary_context: str = Field(..., description="Primary dominant contextual class")
+    secondary_context: Optional[str] = Field(None, description="Secondary context if mixed")
+    primary_nearby_feature: Optional[str] = Field(None, description="Name/type of closest primary relevant feature")
+    primary_distance_km: Optional[float] = Field(None, description="Distance in km to primary nearby feature")
+    reasoning: List[str] = Field(default_factory=list, description="Contextual reasoning bullets explaining the assessment")
+    nearby_features: List[NearbyFeature] = Field(default_factory=list, description="Ranked relevant features detected within 5 km")
+    possible_cause: Optional[PossibleCause] = Field(None, description="Deterministic, non-fabricated plausible cause / source assessment")
+    status: str = Field("READY", description="Status of location context: READY, UNAVAILABLE, TIMEOUT")
+
+
 class InvestigationResponse(BaseModel):
     observation_id: str = Field(..., description="Unique FIRMS observation identifier")
     status: str = Field("SUCCESS", description="Investigation completion status: SUCCESS, PARTIAL_EVIDENCE, DEGRADED")
@@ -138,4 +182,17 @@ class InvestigationResponse(BaseModel):
         ],
         description="Mandatory regulatory and operational disclaimers"
     )
+    location_context: Optional[LocationContext] = Field(
+        None,
+        description="OSM Location Context Analysis (evaluated whenever primary fusion is UNKNOWN or for spatial enrichment)"
+    )
+    nearby_features: List[NearbyFeature] = Field(
+        default_factory=list,
+        description="Direct access to ranked nearby OSM features within 5 km"
+    )
+    possible_cause: Optional[PossibleCause] = Field(
+        None,
+        description="Direct access to plausible cause assessment"
+    )
     created_at: str = Field(..., description="Investigation assembly timestamp in ISO-8601 UTC")
+

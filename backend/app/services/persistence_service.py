@@ -165,15 +165,24 @@ async def detect_persistent_clusters(
         for cl in processed_clusters[:fetch_context_for_top]:
             c_lat, c_lon = cl["center_latitude"], cl["center_longitude"]
             osm_context = get_cached_osm_context(c_lat, c_lon, radius_km=5.0)
-            if osm_context and osm_context.get("nearby_features"):
-                closest_facility = osm_context["nearby_features"][0]
-                cl["industrial_context"] = {
-                    "context_classification": osm_context.get("context_classification", "UNKNOWN"),
-                    "nearby_facility": closest_facility.get("name"),
-                    "facility_type": closest_facility.get("type"),
-                    "facility_category": closest_facility.get("category"),
-                    "distance_km": closest_facility.get("distance_km")
-                }
+            if osm_context:
+                ind_facility = osm_context.get("nearest_facility") or osm_context.get("closest_industrial")
+                if ind_facility:
+                    cl["industrial_context"] = {
+                        "context_classification": osm_context.get("context_classification", "INDUSTRIAL"),
+                        "nearby_facility": ind_facility.get("name"),
+                        "facility_type": ind_facility.get("type"),
+                        "facility_category": ind_facility.get("category"),
+                        "distance_km": ind_facility.get("distance_km")
+                    }
+                else:
+                    cl["industrial_context"] = {
+                        "context_classification": osm_context.get("context_classification", "UNCLASSIFIED_OPEN_LAND"),
+                        "nearby_facility": None,
+                        "facility_type": None,
+                        "facility_category": None,
+                        "distance_km": None
+                    }
 
     persistent_count = sum(1 for c in processed_clusters if c["classification"] in ["PERSISTENT", "HIGHLY PERSISTENT"])
 

@@ -911,7 +911,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
               <div className="target-facility-row">
                 <span className="facility-icon">FACILITY:</span>
                 <span className="facility-name">
-                  {selectedIncident.facilityName} ({selectedIncident.distanceKm?.toFixed(1) || '1.8'} km)
+                  {selectedIncident.facilityName} {selectedIncident.distanceKm !== null && selectedIncident.distanceKm !== undefined ? `(${selectedIncident.distanceKm.toFixed(1)} km)` : ''}
                 </span>
               </div>
             )}
@@ -1227,9 +1227,9 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
           estimatedInfluenceKm: 3.2,
           status: 'CRITICAL',
           classification: 'Industrial High-Temperature Facility',
-          facilityName: 'Reliance Jamnagar Refining & Petrochemical Complex',
-          facilityType: 'Heavy Hydrocarbon Refining & Petrochemicals',
-          distanceKm: 1.8,
+          facilityName: null,
+          facilityType: null,
+          distanceKm: null,
           acquired_at: hotspots[0]?.acquired_at || new Date().toISOString(),
         };
 
@@ -1453,9 +1453,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                       <span className="fac-name">{activeIncident.facilityName || 'Jamnagar Refining & Petrochemical Complex'}</span>
                       <span className="fac-type">{activeIncident.facilityType || 'Heavy Hydrocarbon Refining & Petrochemical Processing'}</span>
                     </div>
-                    <span className="fac-distance-badge font-mono">
-                      {activeIncident.distanceKm?.toFixed(1) || '1.8'} KM DISTANCE
-                    </span>
                   </div>
                   <div className={`proximity-alert-box ${(activeIncident.distanceKm || 1.8) < 3.0 ? 'critical' : 'monitoring'}`}>
                     <span className="alert-icon">!</span>
@@ -1465,7 +1462,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                         : 'STANDARD INDUSTRIAL BUFFER — Thermal emission monitored within 5.0 km zone.'}
                     </span>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* SECTION 06 — 3D RISK ASSESSMENT */}

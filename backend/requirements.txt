@@ -13,6 +13,10 @@ python-dotenv>=1.0.1
 # Data validation
 pydantic>=2.6.0
 
+# Authentication & JWT (Supabase Auth)
+PyJWT>=2.8.0
+cryptography>=42.0.0
+
 # Database & ORM (Phase 3B Supabase PostgreSQL)
 sqlalchemy>=2.0.0
 psycopg[binary]>=3.1.0
