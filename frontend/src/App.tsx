@@ -17,6 +17,8 @@ import {
   LatestFirmsResponse,
 } from './types/hotspot';
 import { getApiUrl, fetchLatestFirmsObservation, getDecisionSupport, DEMO_SCENARIO_PRESETS } from './config/api';
+import { LandingPage } from './components/landing/LandingPage';
+import { MissionControlBackground } from './components/MissionControlBackground';
 import { AnomalyIntelligenceAgentDrawer } from './components/agent';
 import { AuthProvider } from './auth';
 import { AuthGate } from './components/auth/AuthGate';
@@ -385,6 +387,9 @@ function AppContent() {
 
   return (
     <div className="app-layout">
+      {/* 0. ATMOSPHERIC MISSION CONTROL STARFIELD CANVAS */}
+      <MissionControlBackground />
+
       {/* 1. TOP HEADER & NAVIGATION */}
       <TopBar
         currentView={currentView}

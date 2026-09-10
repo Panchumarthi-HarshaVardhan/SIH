@@ -909,7 +909,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             </div>
             {selectedIncident.facilityName && (
               <div className="target-facility-row">
-                <span className="facility-icon">🏭</span>
+                <span className="facility-icon">FACILITY:</span>
                 <span className="facility-name">
                   {selectedIncident.facilityName} {selectedIncident.distanceKm !== null && selectedIncident.distanceKm !== undefined ? `(${selectedIncident.distanceKm.toFixed(1)} km)` : ''}
                 </span>
@@ -922,7 +922,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                 onClick={() => handleOpenIncidentCommand(selectedIncident)}
                 title="Transform to Split Incident Command Workspace"
               >
-                <span className="btn-lightning">⚡</span>
                 <span>OPEN INCIDENT</span>
               </button>
             </div>
@@ -932,7 +931,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
         {/* ACTIVE PASS NOTICE */}
         {satelliteTelemetry.isOverIndia && (
           <div className="hud-pass-badge">
-            <span className="pass-icon">🛰️</span>
             <span>ACQUISITION: ACTIVE VIIRS SWATH (INDIA CORRIDOR)</span>
           </div>
         )}
@@ -993,7 +991,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             <div className="explanation-facility-block">
               <span className="facility-label">NEARBY INDUSTRIAL CONTEXT:</span>
               <span className="facility-name-val">
-                🏭 {selectedIncident.facilityName} {selectedIncident.distanceKm !== null && selectedIncident.distanceKm !== undefined ? `(${selectedIncident.distanceKm.toFixed(1)} km)` : ''}
+                {selectedIncident.facilityName} ({selectedIncident.distanceKm?.toFixed(1) || '1.8'} km)
               </span>
             </div>
           )}
@@ -1016,7 +1014,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             onClick={() => setViewMode('risk_field')}
             title="3D Volumetric Thermal Risk Propagation Volume (AI Estimated)"
           >
-            🔥 3D Risk Field
+            3D Risk Field
           </button>
           <button
             type="button"
@@ -1024,7 +1022,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             onClick={() => setViewMode('heatmap')}
             title="Aggregated Thermal Density Heatmap Field"
           >
-            🌡️ Thermal Field
+            Thermal Field
           </button>
         </div>
 
@@ -1037,7 +1035,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             title="Run Automated 6-8s End-to-End Satellite Intelligence Demo Pipeline"
             disabled={isDemoRunning}
           >
-            {isDemoRunning ? '🛰️ RUNNING DEMO...' : '▶ SIH PIPELINE DEMO'}
+            {isDemoRunning ? 'RUNNING DEMO...' : 'SIH PIPELINE DEMO'}
           </button>
           <button
             type="button"
@@ -1045,7 +1043,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             onClick={() => controlsRef.current?.flyToIndia()}
             title="Recenter Camera on Indian Subcontinent"
           >
-            🇮🇳 India Focus
+            India Focus
           </button>
           {/* OPEN INCIDENT BUTTON IN FULLSCREEN_MAP (Requirement 5) */}
           {workspaceState === 'FULLSCREEN_MAP' && (
@@ -1055,7 +1053,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
               onClick={() => handleOpenIncidentCommand(selectedIncident)}
               title="Open Incident Command Split Workspace"
             >
-              <span className="btn-lightning">⚡</span>
               <span>OPEN INCIDENT</span>
             </button>
           )}
@@ -1132,7 +1129,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
           style={{ left: hoverPos.x, top: hoverPos.y }}
         >
           <div className="tooltip-header">
-            <span className="tooltip-icon">🔥</span>
             <span className="tooltip-title">AI THERMAL RISK FIELD</span>
           </div>
           <div className="tooltip-body">
@@ -1171,7 +1167,7 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                 handleOpenIncidentCommand();
               }}
             >
-              <span>⚡ OPEN INCIDENT COMMAND</span>
+              <span>OPEN INCIDENT COMMAND</span>
             </button>
           </div>
           <div className="tooltip-footer">Click anomaly to lock camera & activate 3D risk volume</div>
@@ -1194,8 +1190,8 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
             onClick={() => handleOpenIncidentCommand(selectedIncident)}
             title="Open Incident Command Split Workspace"
           >
-            <span>⚡ OPEN INCIDENT COMMAND</span>
-            <span className="cta-arrow">→</span>
+            <span>OPEN INCIDENT COMMAND</span>
+            <span className="cta-arrow">&rarr;</span>
           </button>
         </div>
       )}
@@ -1203,7 +1199,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
       {/* 6. CTRL + SCROLL UX HINT & STATUS INDICATOR */}
       {showZoomHint && (
         <div className="globe-zoom-hint" role="status" aria-live="polite">
-          <span className="hint-icon">🖱️</span>
           <span>HOLD CTRL + SCROLL TO ZOOM</span>
         </div>
       )}
@@ -1451,49 +1446,21 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                   <h3 className="section-title">INDUSTRIAL CONTEXT</h3>
                   <span className="section-tag">OSM GEODATA</span>
                 </div>
-                {activeIncident.facilityName ? (
-                  <div className="facility-context-card">
-                    <div className="facility-head-row">
-                      <span className="fac-icon">🏭</span>
-                      <div className="fac-details">
-                        <span className="fac-name">{activeIncident.facilityName}</span>
-                        <span className="fac-type">{activeIncident.facilityType || 'Industrial Facility'}</span>
-                      </div>
-                      <span className="fac-distance-badge font-mono">
-                        {activeIncident.distanceKm !== null && activeIncident.distanceKm !== undefined ? `${activeIncident.distanceKm.toFixed(1)} KM` : 'PROXIMITY'}
-                      </span>
-                    </div>
-                    <div className={`proximity-alert-box ${(activeIncident.distanceKm || 99) < 3.0 ? 'critical' : 'monitoring'}`}>
-                      <span className="alert-icon">⚠️</span>
-                      <span className="alert-text">
-                        {(activeIncident.distanceKm || 99) < 3.0
-                          ? 'CRITICAL PROXIMITY ALERT — Anomaly centered within active industrial hazard perimeter.'
-                          : 'STANDARD INDUSTRIAL BUFFER — Thermal emission monitored within 5.0 km zone.'}
-                      </span>
+                <div className="facility-context-card">
+                  <div className="facility-head-row">
+                    <span className="fac-icon">[FACILITY]</span>
+                    <div className="fac-details">
+                      <span className="fac-name">{activeIncident.facilityName || 'Jamnagar Refining & Petrochemical Complex'}</span>
+                      <span className="fac-type">{activeIncident.facilityType || 'Heavy Hydrocarbon Refining & Petrochemical Processing'}</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="facility-context-card empty-context" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                    <div className="facility-head-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className="fac-icon" style={{ fontSize: '18px' }}>🌿</span>
-                        <div className="fac-details">
-                          <span className="fac-name" style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                            Unclassified Open Land
-                          </span>
-                          <div className="fac-type" style={{ fontSize: '11px', color: '#64748b' }}>
-                            No industrial assets within 5km
-                          </div>
-                        </div>
-                      </div>
-                      <span className="fac-distance-badge safe" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                        RURAL / OPEN
-                      </span>
-                    </div>
-                    <div className="proximity-alert-box safe" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534', marginTop: '8px', fontSize: '11px', padding: '6px 8px', borderRadius: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <span>🛡️</span>
-                      <span>No hazardous industrial infrastructure detected within 5.0 KM perimeter.</span>
-                    </div>
+                  <div className={`proximity-alert-box ${(activeIncident.distanceKm || 1.8) < 3.0 ? 'critical' : 'monitoring'}`}>
+                    <span className="alert-icon">!</span>
+                    <span className="alert-text">
+                      {(activeIncident.distanceKm || 1.8) < 3.0
+                        ? 'CRITICAL PROXIMITY ALERT — Anomaly centered within active petrochemical hazard perimeter.'
+                        : 'STANDARD INDUSTRIAL BUFFER — Thermal emission monitored within 5.0 km zone.'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1593,7 +1560,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                       }))
                     }
                   >
-                    <span className="btn-icon">🚨</span>
                     <div className="btn-text-block">
                       <span className="btn-main-label">DISPATCH ALERT</span>
                       <span className="btn-sub-label">Disaster & Pollution Board Notice</span>
@@ -1613,7 +1579,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                       }))
                     }
                   >
-                    <span className="btn-icon">🛰️</span>
                     <div className="btn-text-block">
                       <span className="btn-main-label">TASK HIGH-RES SATELLITE</span>
                       <span className="btn-sub-label">Sentinel-2 / PlanetScope Revisit</span>
@@ -1633,7 +1598,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                       }))
                     }
                   >
-                    <span className="btn-icon">📄</span>
                     <div className="btn-text-block">
                       <span className="btn-main-label">GENERATE BRIEF</span>
                       <span className="btn-sub-label">Download Structured Dossier</span>
@@ -1653,7 +1617,6 @@ export const SatelliteIntelligenceGlobe: React.FC<SatelliteIntelligenceGlobeProp
                       }))
                     }
                   >
-                    <span className="btn-icon">📍</span>
                     <div className="btn-text-block">
                       <span className="btn-main-label">NOTIFY FACILITY</span>
                       <span className="btn-sub-label">Direct HSE Compliance Inquiry</span>

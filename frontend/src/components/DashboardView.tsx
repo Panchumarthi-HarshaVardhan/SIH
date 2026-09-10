@@ -521,17 +521,17 @@ export function DashboardView({
           <div className="triage-incidents-list">
             {loadingPriority && priorityItems.length === 0 ? (
               <div className="triage-loading-state" style={{ textAlign: 'center', padding: '24px 16px' }}>
-                <FontAwesomeIcon icon={faArrowsRotate} spin style={{ fontSize: '18px', color: '#059669', marginBottom: '8px' }} />
-                <div style={{ fontWeight: 600, color: '#334155', fontSize: '13px' }}>Syncing priority queue...</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Connecting to threat prioritization engine</div>
+                <FontAwesomeIcon icon={faArrowsRotate} spin style={{ fontSize: '18px', color: '#0284C7', marginBottom: '8px' }} />
+                <div style={{ fontWeight: 600, color: '#0F172A', fontSize: '13px', letterSpacing: '0.04em' }}>SYNCING PRIORITY QUEUE...</div>
+                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>Connecting to threat prioritization engine</div>
               </div>
             ) : triageIncidents.length === 0 ? (
               <div className="triage-empty-state" style={{ textAlign: 'center', padding: '20px 12px' }}>
-                <p style={{ color: '#64748b', fontSize: '12px', margin: 0 }}>No incidents match the selected severity filter.</p>
+                <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>No incidents match the selected severity filter.</p>
                 <button
                   type="button"
                   className="btn btn-sm"
-                  style={{ marginTop: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}
+                  style={{ marginTop: '8px', background: 'rgba(241, 245, 249, 0.9)', border: '1px solid rgba(203, 213, 225, 0.6)', color: '#0F172A', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}
                   onClick={onRefreshAll}
                 >
                   <FontAwesomeIcon icon={faArrowsRotate} /> Retry Sync
@@ -556,19 +556,13 @@ export function DashboardView({
                     tabIndex={0}
                     style={{
                       cursor: 'pointer',
-                      borderLeft: isSelected ? '4px solid #059669' : undefined,
                     }}
                   >
                     <div className="card-top-row">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className={`severity-badge ${getSeverityBadgeClass(inc.risk_level)}`}>
-                          {inc.risk_level}
-                        </span>
-                        <span className="incident-class-name font-medium">
-                          {inc.classification.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                      <span className="incident-risk-score font-mono font-bold" style={{ color: inc.risk_level === 'CRITICAL' ? '#dc2626' : inc.risk_level === 'HIGH' ? '#ea580c' : '#475569' }}>
+                      <span className={`severity-badge ${getSeverityBadgeClass(inc.risk_level)}`}>
+                        {inc.risk_level}
+                      </span>
+                      <span className="incident-risk-score font-mono font-bold" style={{ color: inc.risk_level === 'CRITICAL' ? '#DC2626' : inc.risk_level === 'HIGH' ? '#D97706' : '#64748B' }}>
                         Risk: {scoreDisplay}/100
                       </span>
                     </div>
@@ -593,12 +587,12 @@ export function DashboardView({
 
                     {/* Threat Exposure Status / Asset Counts */}
                     {hasNearbyFeatures ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#059669', background: '#ecfdf5', padding: '3px 8px', borderRadius: '4px', margin: '4px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#16A34A', background: 'rgba(22, 163, 74, 0.1)', border: '1px solid rgba(22, 163, 74, 0.25)', padding: '3px 8px', borderRadius: '4px', margin: '4px 0' }}>
                         <FontAwesomeIcon icon={faIndustry} />
                         <span>{inc.exposed_assets_count || inc.nearby_features!.length} mapped assets within 5.0 km</span>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', background: '#f8fafc', padding: '3px 8px', borderRadius: '4px', margin: '4px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: '#64748B', background: 'rgba(241, 245, 249, 0.7)', border: '1px solid rgba(203, 213, 225, 0.4)', padding: '3px 8px', borderRadius: '4px', margin: '4px 0' }}>
                         <span>Geospatial enrichment pending</span>
                         {onEnrichHotspot && (
                           <button
@@ -607,7 +601,7 @@ export function DashboardView({
                               e.stopPropagation();
                               onEnrichHotspot(inc.id, inc.latitude, inc.longitude);
                             }}
-                            style={{ background: '#059669', color: '#ffffff', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', cursor: 'pointer' }}
+                            style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', border: '1px solid rgba(2, 132, 199, 0.3)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', cursor: 'pointer' }}
                           >
                             Enrich 5km
                           </button>

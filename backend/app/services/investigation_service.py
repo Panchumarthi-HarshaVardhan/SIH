@@ -254,10 +254,28 @@ class InvestigationService:
                         observation_id=clean_id,
                         force_refresh=force_refresh
                     ),
-                    timeout=75.0
+                    timeout=8.0
                 )
             except asyncio.TimeoutError:
-                logger.warning(f"Satellite retrieval timed out for observation {clean_id}")
+                logger.warning(f"Satellite retrieval timed out (8.0s) for observation {clean_id}")
+                # If force refresh timed out, attempt to fallback to existing local cache
+                if force_refresh:
+                    try:
+                        cached_fallback = await orchestrator.get_orchestrated_satellite_evidence(
+                            lat=lat,
+                            lon=lon,
+                            timestamp=timestamp,
+                            observation_id=clean_id,
+                            force_refresh=False
+                        )
+                        s2_c = cached_fallback.get("sentinel2", {})
+                        s1_c = cached_fallback.get("sentinel1", {})
+                        if s2_c.get("available") or s2_c.get("image_available") or s1_c.get("available") or s1_c.get("image_available"):
+                            system_warnings.append("Live satellite refresh timed out; displaying latest cached satellite evidence.")
+                            return cached_fallback
+                    except Exception as cache_err:
+                        logger.debug(f"Cached fallback attempt failed: {cache_err}")
+
                 s2_to = {"available": False, "status": "TIMEOUT", "image_available": False, "error": "TIMEOUT"}
                 s1_to = {"available": False, "status": "S1_FALLBACK_UNAVAILABLE", "image_available": False, "error": "TIMEOUT"}
                 return {
@@ -269,6 +287,24 @@ class InvestigationService:
                 }
             except Exception as e:
                 logger.warning(f"Satellite retrieval error for observation {clean_id}: {e}")
+                # If force refresh errored, attempt to fallback to existing local cache
+                if force_refresh:
+                    try:
+                        cached_fallback = await orchestrator.get_orchestrated_satellite_evidence(
+                            lat=lat,
+                            lon=lon,
+                            timestamp=timestamp,
+                            observation_id=clean_id,
+                            force_refresh=False
+                        )
+                        s2_c = cached_fallback.get("sentinel2", {})
+                        s1_c = cached_fallback.get("sentinel1", {})
+                        if s2_c.get("available") or s2_c.get("image_available") or s1_c.get("available") or s1_c.get("image_available"):
+                            system_warnings.append("Live satellite refresh error; displaying latest cached satellite evidence.")
+                            return cached_fallback
+                    except Exception:
+                        pass
+
                 s2_err = {"available": False, "status": "RETRIEVAL_FAILED", "image_available": False, "error": str(e)}
                 s1_err = {"available": False, "status": "S1_FALLBACK_UNAVAILABLE", "image_available": False, "error": str(e)}
                 return {

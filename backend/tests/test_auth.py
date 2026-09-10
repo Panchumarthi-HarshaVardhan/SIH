@@ -68,14 +68,16 @@ class TestSupabaseAuthBackend:
         expired_token = create_test_jwt(exp_delta=-100)
         with pytest.raises(Exception) as excinfo:
             verify_supabase_jwt(expired_token)
-        assert "expired" in str(excinfo.value).lower()
+        err_msg = getattr(excinfo.value, "detail", str(excinfo.value))
+        assert "expired" in str(err_msg).lower()
 
     def test_3_tampered_signature_rejected_with_401(self):
         """Test 3: Token with invalid/tampered signature is rejected."""
         invalid_token = create_test_jwt(secret="wrong-secret-key-xyz")
         with pytest.raises(Exception) as excinfo:
             verify_supabase_jwt(invalid_token)
-        assert "invalid" in str(excinfo.value).lower() or "signature" in str(excinfo.value).lower()
+        err_msg = getattr(excinfo.value, "detail", str(excinfo.value))
+        assert "invalid" in str(err_msg).lower() or "signature" in str(err_msg).lower()
 
     def test_4_missing_token_on_protected_chat_returns_401(self, client):
         """Test 4: POST /api/agent/chat rejects unauthenticated requests with 401."""
@@ -153,4 +155,5 @@ class TestSupabaseAuthBackend:
         )
         with pytest.raises(Exception) as excinfo:
             verify_supabase_jwt(token_no_sub)
-        assert "sub" in str(excinfo.value).lower()
+        err_msg = getattr(excinfo.value, "detail", str(excinfo.value))
+        assert "sub" in str(err_msg).lower()

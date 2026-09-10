@@ -185,18 +185,18 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
             fontSize: '0.85rem',
             color: '#e9d5ff'
           }}>
-            <strong>⚡ Satellite Fallback Trigger:</strong> {fallbackReason}
+            <strong>Satellite Fallback Trigger:</strong> {fallbackReason}
           </div>
         )}
 
         {/* ===================================================================== */}
         {/* SECTION 1: SENTINEL-2 MULTISPECTRAL OPTICAL (PRIMARY) */}
         {/* ===================================================================== */}
-        <div style={{ marginTop: '0.75rem', marginBottom: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.85rem', background: '#FAFCFA' }}>
+        <div style={{ marginTop: '0.75rem', marginBottom: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.85rem', background: 'rgba(12, 25, 36, 0.48)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1rem' }}>👁️</span>
-              <strong style={{ fontSize: '0.88rem', color: '#172019' }}>SENTINEL-2 OPTICAL EVIDENCE (PRIMARY)</strong>
+              <FontAwesomeIcon icon={faEye} style={{ color: '#00B7FF' }} />
+              <strong style={{ fontSize: '0.88rem', color: '#EAF6FF' }}>SENTINEL-2 OPTICAL EVIDENCE (PRIMARY)</strong>
             </div>
             <span style={{
               fontSize: '0.72rem',
@@ -280,7 +280,7 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
                 {showGradCam && (
                   <div className="gradcam-overlay-sim">
                     <div className="gradcam-core-pulse" />
-                    <span className="gradcam-tag">🔥 Thermal Focus Overlay</span>
+                    <span className="gradcam-tag">Thermal Focus Overlay</span>
                   </div>
                 )}
               </div>
@@ -327,7 +327,7 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1rem' }}>📡</span>
+              <FontAwesomeIcon icon={faSatellite} style={{ color: '#a855f7' }} />
               <strong style={{ fontSize: '0.9rem', color: '#f8fafc' }}>SENTINEL-1 SAR RADAR EVIDENCE (BACKUP)</strong>
             </div>
             <span style={{
@@ -351,7 +351,7 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
               color: '#94a3b8',
               lineHeight: '1.4'
             }}>
-              <span style={{ color: '#38bdf8', fontWeight: 600 }}>ℹ️ Not Queried: </span>
+              <span style={{ color: '#38bdf8', fontWeight: 600 }}>Not Queried: </span>
               {s1.reason_not_queried || 'Sentinel-2 optical conditions acceptable (<50% cloud cover). Sentinel-1 is only queried when optical evidence is degraded or unavailable.'}
             </div>
           ) : isS1Available ? (
@@ -398,7 +398,7 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
                       style={{ background: '#581c87', borderColor: '#9333ea' }}
                       onClick={() => { setModalImageType('s1'); setIsModalOpen(true); }}
                     >
-                      🔍 View SAR Radar Fullscreen
+                      View SAR Radar Fullscreen
                     </button>
                   </div>
                 </div>

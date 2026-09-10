@@ -32,7 +32,7 @@ function createIndustrialLabelTexture(name: string, distKm: number): THREE.Canva
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 24px "JetBrains Mono", monospace, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🏭 INDUSTRIAL CANDIDATE', 256, 44);
+    ctx.fillText('INDUSTRIAL CANDIDATE', 256, 44);
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 22px "JetBrains Mono", monospace, sans-serif';

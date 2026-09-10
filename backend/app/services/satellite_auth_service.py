@@ -53,7 +53,7 @@ class SatelliteAuthService:
 
         should_close = False
         if client is None:
-            client = httpx.AsyncClient(timeout=15.0)
+            client = httpx.AsyncClient(timeout=4.0)
             should_close = True
 
         try:

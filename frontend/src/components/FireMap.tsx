@@ -778,7 +778,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={() => setRiskDisplayMode('ai_risk')}
             title="AI 2D Risk Propagation Field"
           >
-            <Flame size={12} className="text-orange-400" /> AI Risk Field
+            AI Risk Field
           </button>
           <button
             type="button"
@@ -786,7 +786,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={() => setRiskDisplayMode('thermal_field')}
             title="Radiometric Thermal Intensity Field"
           >
-            <Activity size={12} className="text-amber-400" /> Thermal Field
+            Thermal Field
           </button>
         </div>
 
@@ -798,7 +798,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={handleIndiaFocus}
             title="Focus camera on Indian subcontinent"
           >
-            <MapPin size={12} className="text-emerald-400" /> India Focus
+            India Focus
           </button>
           <button
             type="button"
@@ -806,7 +806,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={handleGlobalView}
             title="Global Earth View"
           >
-            <Globe size={12} className="text-blue-400" /> Global View
+            Global View
           </button>
         </div>
 
@@ -843,9 +843,13 @@ export const FireMap: React.FC<FireMapProps> = ({
             title="Deselect incident and reset camera to India view"
             style={{
               marginLeft: '6px',
+              background: 'rgba(0, 183, 255, 0.15)',
+              borderColor: 'rgba(0, 183, 255, 0.4)',
+              color: '#EAF6FF',
+              fontWeight: 700,
             }}
           >
-            <LucideX size={12} /> Reset Selection
+            OPEN INCIDENT
           </button>
         )}
 
@@ -950,22 +954,25 @@ export const FireMap: React.FC<FireMapProps> = ({
 
         {/* AI 2D THERMAL RISK FIELD: Clean Single Risk Boundary */}
         {selectedLat && selectedLon && riskDisplayMode === 'ai_risk' && (
-          <Circle
-            center={[selectedLat, selectedLon]}
-            radius={displayedRadiusMeters}
-            pathOptions={{
-              color: '#ef4444',
-              fillColor: '#ef4444',
-              fillOpacity: 0.1,
-              weight: 1.5,
-              dashArray: '5 5',
-            }}
-          >
-            <Tooltip permanent={false} direction="top" offset={[0, -20]} className="risk-field-disclaimer-tooltip">
-              <div style={{ textAlign: 'center', fontSize: '10px', fontWeight: 700, color: '#dc2626' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <Flame size={11} className="text-orange-500" />
-                  <span>AI ESTIMATED RISK FIELD: {calculatedRiskRadiusKm} KM</span>
+          <>
+            {/* Outermost Risk Footprint Perimeter (Dashed border + subtle fill) */}
+            <Circle
+              center={[selectedLat, selectedLon]}
+              radius={displayedRadiusMeters}
+              pathOptions={{
+                color: '#ef4444',
+                fillColor: '#ef4444',
+                fillOpacity: 0.12,
+                weight: 1.5,
+                dashArray: '5 5',
+              }}
+            >
+              <Tooltip permanent direction="top" offset={[0, -20]} className="risk-field-disclaimer-tooltip">
+                <div style={{ textAlign: 'center', fontSize: '9px', fontWeight: 700, color: '#fca5a5' }}>
+                  <div>AI ESTIMATED RISK FIELD: {calculatedRiskRadiusKm} KM</div>
+                  <div style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 500 }}>
+                    [ AI estimated risk propagation — NOT actual physical fire boundary ]
+                  </div>
                 </div>
                 <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 500 }}>
                   [ AI estimated risk propagation — NOT physical fire boundary ]
@@ -1010,11 +1017,9 @@ export const FireMap: React.FC<FireMapProps> = ({
                 dashArray: '4 4',
               }}
             >
-              <Tooltip permanent={false} direction="center" className="proximity-vector-tooltip">
-                <span style={{ fontSize: '10px', fontWeight: 700, color: '#0284c7', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <Flame size={10} className="text-orange-500" />
-                  <span>── {industrialFacility.distance_km.toFixed(1)} KM ──</span>
-                  <Factory size={10} className="text-blue-500" />
+              <Tooltip permanent direction="center" className="proximity-vector-tooltip">
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.04em' }}>
+                  HAZARD ── {industrialFacility.distance_km.toFixed(1)} KM ── FACILITY
                 </span>
               </Tooltip>
             </Polyline>
@@ -1030,10 +1035,9 @@ export const FireMap: React.FC<FireMapProps> = ({
                 weight: 2,
               }}
             >
-              <Tooltip permanent={false} direction="right" offset={[10, 0]} className="industrial-facility-tooltip">
-                <span style={{ fontSize: '10px', fontWeight: 700, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <Factory size={11} className="text-amber-600" />
-                  <span>{industrialFacility.name} ({industrialFacility.distance_km.toFixed(1)} KM)</span>
+              <Tooltip permanent direction="right" offset={[10, 0]} className="industrial-facility-tooltip">
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#fbbf24' }}>
+                  {industrialFacility.name} ({industrialFacility.distance_km.toFixed(1)} KM)
                 </span>
               </Tooltip>
             </CircleMarker>
@@ -1576,9 +1580,7 @@ export const FireMap: React.FC<FireMapProps> = ({
               }
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Zap size={12} /> OPEN INCIDENT
-            </span>
+            <span>OPEN INCIDENT</span>
             <span className="cta-arrow">&rarr;</span>
           </button>
         </div>
@@ -1773,53 +1775,17 @@ export const FireMap: React.FC<FireMapProps> = ({
                 <h3 className="section-title">OSM INDUSTRIAL GROUND CONTEXT</h3>
                 <span className="section-tag">OSM / INFRA</span>
               </div>
-              {industrialFacility ? (
-                <div className="facility-context-card">
-                  <div className="facility-head-row">
-                    <span className="fac-icon"><Factory size={16} className="text-slate-600" /></span>
-                    <div className="fac-details">
-                      <span className="fac-name">{industrialFacility.name}</span>
-                      <span className="fac-type">{industrialFacility.type} • {industrialFacility.category}</span>
-                    </div>
-                    <span className="fac-distance-badge">{industrialFacility.distance_km.toFixed(1)} KM</span>
-                  </div>
-                  <div className={`proximity-alert-box ${industrialFacility.distance_km <= 2.0 ? 'critical' : 'warning'}`}>
-                    <AlertTriangle size={14} className="shrink-0 text-amber-500" />
-                    <span>
-                      {industrialFacility.distance_km <= 2.0
-                        ? 'Direct threat exposure: Industrial facility in active thermal influence corridor.'
-                        : `Nearby industrial infrastructure located ${industrialFacility.distance_km.toFixed(1)} km from anomaly perimeter.`}
-                    </span>
+              <div className="facility-context-card">
+                <div className="facility-head-row">
+                  <span className="fac-icon"><FontAwesomeIcon icon={faIndustry} /></span>
+                  <div className="fac-details">
+                    <span className="fac-name">{industrialFacility.name}</span>
+                    <span className="fac-type">{industrialFacility.type} • {industrialFacility.category}</span>
                   </div>
                 </div>
-              ) : (
-                <div className="facility-context-card empty-context" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
-                  <div className="facility-head-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="fac-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                        <TreePine size={18} className="text-emerald-600" />
-                      </span>
-                      <div className="fac-details">
-                        <span className="fac-name" style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                          {selectedPriorityIncident?.display_locality
-                            ? `Unclassified Open Land (${selectedPriorityIncident.display_locality})`
-                            : (liveOsmContext as any)?.display_locality
-                            ? `Unclassified Open Land (${(liveOsmContext as any).display_locality})`
-                            : 'Unclassified Open Land'}
-                        </span>
-                        <div className="fac-type" style={{ fontSize: '11px', color: '#64748b' }}>
-                          No industrial assets within 5km
-                        </div>
-                      </div>
-                    </div>
-                    <span className="fac-distance-badge safe" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                      RURAL / OPEN
-                    </span>
-                  </div>
-                  <div className="proximity-alert-box safe" style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534', marginTop: '8px', fontSize: '11px', padding: '6px 8px', borderRadius: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <ShieldCheck size={14} className="shrink-0 text-emerald-600" />
-                    <span>No hazardous industrial infrastructure detected within 5.0 KM operational radius.</span>
-                  </div>
+                <div className="proximity-alert-box critical">
+                  <span className="alert-badge-tech"><FontAwesomeIcon icon={faTriangleExclamation} /></span>
+                  <span>Direct threat exposure: Industrial fuel storage & processing facility in active influence corridor.</span>
                 </div>
               )}
             </div>
@@ -1899,7 +1865,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action alert-btn"
                   onClick={() => handleDispatchAction('dispatch')}
                 >
-                  <span className="btn-icon"><Flame size={16} className="text-red-400" /></span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faFire} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">DISPATCH UNITS</span>
                     <span className="btn-sub-label">Hazmat & Fire Squad</span>
@@ -1911,7 +1877,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action task-btn"
                   onClick={() => handleDispatchAction('tasking')}
                 >
-                  <span className="btn-icon"><LucideSatellite size={16} className="text-cyan-400" /></span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faSatellite} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">SATELLITE TASKING</span>
                     <span className="btn-sub-label">High-Res S2 Pass</span>
@@ -1923,7 +1889,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action brief-btn"
                   onClick={() => handleDispatchAction('brief')}
                 >
-                  <span className="btn-icon"><FileText size={16} className="text-amber-400" /></span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faBookOpen} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">ISSUE BRIEFING</span>
                     <span className="btn-sub-label">EOC Evacuation Buffer</span>
@@ -1935,7 +1901,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action notify-btn"
                   onClick={() => handleDispatchAction('notify')}
                 >
-                  <span className="btn-icon"><Radio size={16} className="text-emerald-400" /></span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faBolt} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">BROADCAST ADVISORY</span>
                     <span className="btn-sub-label">District Fire Control</span>
@@ -1988,6 +1954,7 @@ export const FireMap: React.FC<FireMapProps> = ({
               <div className="legend-subtitle">THERMAL SEVERITY</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#ef4444' }}></span> Critical (&ge;50 MW)</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#f97316' }}></span> High (&ge;25 MW)</div>
+              <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#f97316' }}></span> High (&ge;25 MW)</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#eab308' }}></span> Moderate (&ge;10 MW)</div>
               <div className="legend-item"><span className="legend-ring"></span> Selected Thermal Core</div>
             </div>
@@ -2010,6 +1977,20 @@ export const FireMap: React.FC<FireMapProps> = ({
               AI Risk Field is a propagation estimate — NOT an official evacuation order.
             </div>
           </div>
+        </div>
+      )}
+
+      {/* CTRL + SCROLL UX HINT & STATUS INDICATOR */}
+      {showZoomHint && (
+        <div className="globe-zoom-hint" role="status" aria-live="polite">
+          <span className="hint-icon"><FontAwesomeIcon icon={faMagnifyingGlass} /></span>
+          <span>HOLD CTRL + SCROLL TO ZOOM</span>
+        </div>
+      )}
+      {ctrlZoomStatus && (
+        <div className={`globe-ctrl-indicator ${ctrlZoomStatus}`} role="status">
+          <span className={`ctrl-dot ${ctrlZoomStatus}`} />
+          <span>{ctrlZoomStatus === 'enabled' ? 'CTRL + SCROLL ZOOM ENABLED' : 'ZOOM LOCKED'}</span>
         </div>
       )}
     </div>
