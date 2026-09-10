@@ -22,6 +22,7 @@ import {
   Hotspot,
   PersistentCluster,
   ThermalAlert,
+  PriorityRankingItem,
 } from '../types/hotspot';
 import { getInvestigation } from '../config/api';
 import { SatelliteEvidenceCard } from './SatelliteEvidenceCard';
@@ -33,6 +34,7 @@ export interface InvestigationPanelProps {
   hotspot?: Hotspot | null;
   cluster?: PersistentCluster | null;
   alert?: ThermalAlert | null;
+  priorityIncident?: PriorityRankingItem | null;
   onClose: () => void;
   onStatusChange?: (alertId: string, newStatus: ThermalAlert['status'], notes?: string) => void;
 }
@@ -42,26 +44,31 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   hotspot,
   cluster,
   alert,
+  priorityIncident,
   onClose,
   onStatusChange,
 }) => {
   // Determine primary observation ID
   const rawId =
     propObservationId ||
+    priorityIncident?.hotspot_id ||
+    priorityIncident?.cluster_id ||
     hotspot?.observation_id ||
     (alert?.cluster_id && alert.cluster_id.startsWith('FIRMS_')
       ? alert.cluster_id.replace('FIRMS_', '')
       : undefined) ||
+    alert?.cluster_id ||
     (cluster?.observations && cluster.observations.length > 0
       ? cluster.observations[0].observation_id
       : undefined) ||
+    cluster?.cluster_id ||
     (hotspot ? `HOTSPOT_${hotspot.latitude.toFixed(3)}_${hotspot.longitude.toFixed(3)}` : undefined);
 
   const cleanObservationId = rawId?.trim();
 
   // Coordinates fallback
-  const lat = hotspot?.latitude ?? cluster?.center_latitude ?? alert?.latitude ?? 22.6789;
-  const lon = hotspot?.longitude ?? cluster?.center_longitude ?? alert?.longitude ?? 80.54321;
+  const lat = priorityIncident?.latitude ?? hotspot?.latitude ?? cluster?.center_latitude ?? alert?.latitude ?? 22.6789;
+  const lon = priorityIncident?.longitude ?? hotspot?.longitude ?? cluster?.center_longitude ?? alert?.longitude ?? 80.54321;
   const alertId = alert?.alert_id;
 
   // Investigation state
@@ -74,7 +81,9 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   const [actionNotes, setActionNotes] = useState<string>('');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  // Abort controller reference to cancel in-flight requests on unmount/re-selection
+  // Monotonically increasing request sequence tracking & loaded ID tracking
+  const requestIdRef = useRef<number>(0);
+  const loadedObservationIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchInvestigationData = useCallback(
@@ -82,8 +91,23 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
       if (!cleanObservationId) {
         setError('No valid Observation ID provided for investigation.');
         setLoading(false);
+        setData(null);
         return;
       }
+
+      // If forcing refresh, keep previous evidence visible while refreshing spinner spins
+      // If initial/new incident selection, clear immediately so previous evidence does not linger
+      if (!forceRefresh) {
+        setData(null);
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+      setError(null);
+
+      // Increment request sequence ID to invalidate prior in-flight responses
+      requestIdRef.current += 1;
+      const currentRequestId = requestIdRef.current;
 
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -91,38 +115,50 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      if (forceRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
       try {
         const res = await getInvestigation(cleanObservationId, forceRefresh, controller.signal);
+        // Protect against race conditions: ignore response if a newer request has started
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
         setData(res);
+        loadedObservationIdRef.current = cleanObservationId;
       } catch (err: any) {
         if (err.name === 'AbortError') {
           return;
         }
+        if (currentRequestId !== requestIdRef.current) {
+          return;
+        }
         console.error('Failed to load investigation:', err);
-        setError(err.message || 'Investigation service temporarily unavailable.');
+        setError(err.message || 'Evidence temporarily unavailable.');
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [cleanObservationId]
   );
 
   useEffect(() => {
+    if (!cleanObservationId) {
+      setData(null);
+      setError('No valid Observation ID provided for investigation.');
+      setLoading(false);
+      return;
+    }
+
+    // Auto-load evidence immediately upon opening or switching incident
     fetchInvestigationData(false);
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchInvestigationData]);
+  }, [cleanObservationId, fetchInvestigationData]);
 
   const handleAction = (status: ThermalAlert['status']) => {
     if (alertId && onStatusChange) {

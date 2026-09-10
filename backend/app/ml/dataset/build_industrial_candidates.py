@@ -92,14 +92,22 @@ async def process_industrial_candidates(max_samples: int = TARGET_INDUSTRIAL) ->
         if frp < MIN_FRP or conf_val < MIN_FIRMS_CONFIDENCE:
             continue
 
-        # Evaluate OSM Industrial Proximity
-        try:
-            osm_ctx = await fetch_hotspot_osm_context(lat=lat, lon=lon, radius_km=5.0)
-        except Exception:
-            osm_ctx = None
-
         ind_distance = None
         ind_type = ""
+
+        # Fast local industrial benchmark check first
+        for seed in INDUSTRIAL_BENCHMARK_SEEDS:
+            d = haversine_distance_km(lat, lon, seed["lat"], seed["lon"])
+            if d <= 5.0 and (ind_distance is None or d < ind_distance):
+                ind_distance = d
+                ind_type = seed["type"]
+
+        # If not matched against known industrial seeds, check OSM with quick timeout
+        if ind_distance is None:
+            try:
+                osm_ctx = await asyncio.wait_for(fetch_hotspot_osm_context(lat=lat, lon=lon, radius_km=5.0), timeout=0.5)
+            except Exception:
+                osm_ctx = None
 
         if osm_ctx and osm_ctx.get("nearby_features"):
             for feat in osm_ctx["nearby_features"]:

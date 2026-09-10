@@ -92,6 +92,20 @@ SATELLITE_METRICS_DIR = os.path.join(PROJECT_ROOT, os.getenv("SATELLITE_METRICS_
 # Runtime Environment (development, staging, production, test)
 ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("APP_ENV", "development")).strip() or "development"
 
+# Anomaly Intelligence Agent Configuration (Phase 1, 2, 3)
+GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY") or os.getenv("LLM_API_KEY", "")).strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip()
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini" if GEMINI_API_KEY else ("groq" if GROQ_API_KEY else "gemini")).strip().lower()
+AGENT_MAX_TOOL_CALLS = int(os.getenv("AGENT_MAX_TOOL_CALLS", "6"))
+
+# Supabase Authentication Configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://agxtdttgjdtduyxeijcv.supabase.co").strip().rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_PDCeB8_EbqZ_Y7kxOOROew_EjEa8omq")).strip()
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", os.getenv("VITE_SUPABASE_ANON_KEY", SUPABASE_PUBLISHABLE_KEY)).strip()
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "").strip()
 
 
 def get_config_status() -> dict:
@@ -99,10 +113,12 @@ def get_config_status() -> dict:
     Returns a safe dictionary summarizing configuration status.
     Never exposes API keys or secret tokens.
     """
+    is_configured = bool(GROQ_API_KEY) if LLM_PROVIDER == "groq" else bool(GEMINI_API_KEY)
     return {
         "nasa_firms_map_key_configured": bool(NASA_FIRMS_MAP_KEY),
         "firms_ingest_interval_minutes": FIRMS_INGEST_INTERVAL_MINUTES,
         "database_configured": bool(DATABASE_URL),
+        "supabase_auth_configured": bool(SUPABASE_URL),
         "cors_origins": CORS_ORIGINS,
         "satellite_provider": SATELLITE_PROVIDER,
         "copernicus_configured": bool(COPERNICUS_CLIENT_ID and COPERNICUS_CLIENT_SECRET),
@@ -110,6 +126,9 @@ def get_config_status() -> dict:
         "satellite_max_cloud_cover": SATELLITE_MAX_CLOUD_COVER,
         "satellite_classifier": SATELLITE_CLASSIFIER,
         "environment": ENVIRONMENT,
+        "agent_llm_provider": LLM_PROVIDER,
+        "agent_llm_configured": is_configured,
+        "agent_max_tool_calls": AGENT_MAX_TOOL_CALLS,
     }
 
 

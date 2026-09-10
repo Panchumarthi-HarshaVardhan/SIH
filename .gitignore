@@ -67,6 +67,7 @@ data/satellite/persistent_thermal/*
 !data/satellite/persistent_thermal/.gitkeep
 *.pth
 *.npz
+*.zip
 
 # ML Satellite Dataset (Keep manifests, reports, scripts, .gitkeeps; ignore large samples/raw/processed)
 backend/data/ml/satellite/raw/*

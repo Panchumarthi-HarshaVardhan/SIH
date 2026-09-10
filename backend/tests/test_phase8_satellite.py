@@ -109,7 +109,7 @@ class TestPhase8SatelliteIntelligence(unittest.TestCase):
 
     def test_api_satellite_image_serve(self):
         res = asyncio.run(self.provider.fetch_satellite_image(self.test_lat, self.test_lon, "2026-09-01"))
-        patch_id = res["image_id"]
+        patch_id = res.get("image_id") or res.get("patch_id") or (res["image_url"].split("/")[-1] if res.get("image_url") else generate_patch_id(self.test_lat, self.test_lon))
 
         response = self.client.get(f"/api/satellite/image/{patch_id}")
         self.assertEqual(response.status_code, 200)

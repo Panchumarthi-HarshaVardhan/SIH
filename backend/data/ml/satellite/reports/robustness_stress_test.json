@@ -1,96 +1,96 @@
 {
   "clean_baseline_test": {
-    "accuracy": 1.0,
-    "macro_f1": 1.0,
-    "sample_count": 153
+    "accuracy": 0.9384,
+    "macro_f1": 0.9444,
+    "sample_count": 146
   },
   "high_cloud_subgroup_test_ge_30pct": {
-    "sample_count": 42,
+    "sample_count": 14,
     "accuracy": 1.0,
     "macro_f1": 1.0
   },
   "gaussian_noise_stress_tests": {
     "noise_sigma_0.05": {
       "noise_std": 0.05,
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
+      "accuracy": 0.9384,
+      "macro_f1": 0.9444,
       "accuracy_drop": 0.0
     },
     "noise_sigma_0.10": {
       "noise_std": 0.1,
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "accuracy_drop": 0.0
+      "accuracy": 0.9589,
+      "macro_f1": 0.9629,
+      "accuracy_drop": -0.0205
     },
     "noise_sigma_0.20": {
       "noise_std": 0.2,
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "accuracy_drop": 0.0
+      "accuracy": 0.8973,
+      "macro_f1": 0.9064,
+      "accuracy_drop": 0.0411
     },
     "noise_sigma_0.35": {
       "noise_std": 0.35,
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "accuracy_drop": 0.0
+      "accuracy": 0.8014,
+      "macro_f1": 0.8184,
+      "accuracy_drop": 0.137
     }
   },
   "cloud_haze_stress_tests": {
     "cloud_haze_20pct": {
       "haze_intensity": 0.2,
-      "accuracy": 0.6536,
-      "macro_f1": 0.5338,
-      "accuracy_drop": 0.3464
+      "accuracy": 0.9658,
+      "macro_f1": 0.9691,
+      "accuracy_drop": -0.0274
     },
     "cloud_haze_40pct": {
       "haze_intensity": 0.4,
-      "accuracy": 0.6536,
-      "macro_f1": 0.5338,
-      "accuracy_drop": 0.3464
+      "accuracy": 0.9178,
+      "macro_f1": 0.925,
+      "accuracy_drop": 0.0205
     },
     "cloud_haze_60pct": {
       "haze_intensity": 0.6,
-      "accuracy": 0.3072,
-      "macro_f1": 0.213,
-      "accuracy_drop": 0.6928
+      "accuracy": 0.8562,
+      "macro_f1": 0.8662,
+      "accuracy_drop": 0.0822
     }
   },
   "band_dropout_sensitivity": {
     "zeroed_band_B02": {
       "band": "B02",
-      "accuracy": 0.8039,
-      "macro_f1": 0.7734,
-      "accuracy_drop": 0.1961
+      "accuracy": 0.4863,
+      "macro_f1": 0.4223,
+      "accuracy_drop": 0.4521
     },
     "zeroed_band_B03": {
       "band": "B03",
-      "accuracy": 0.9673,
-      "macro_f1": 0.9639,
-      "accuracy_drop": 0.0327
+      "accuracy": 0.3151,
+      "macro_f1": 0.2407,
+      "accuracy_drop": 0.6233
     },
     "zeroed_band_B04": {
       "band": "B04",
-      "accuracy": 0.9281,
-      "macro_f1": 0.9211,
-      "accuracy_drop": 0.0719
+      "accuracy": 0.5342,
+      "macro_f1": 0.4458,
+      "accuracy_drop": 0.4041
     },
     "zeroed_band_B08": {
       "band": "B08",
-      "accuracy": 0.5294,
-      "macro_f1": 0.4711,
-      "accuracy_drop": 0.4706
+      "accuracy": 0.8699,
+      "macro_f1": 0.8822,
+      "accuracy_drop": 0.0685
     },
     "zeroed_band_B11": {
       "band": "B11",
-      "accuracy": 0.9346,
-      "macro_f1": 0.9279,
-      "accuracy_drop": 0.0654
+      "accuracy": 0.9452,
+      "macro_f1": 0.9506,
+      "accuracy_drop": -0.0068
     },
     "zeroed_band_B12": {
       "band": "B12",
-      "accuracy": 1.0,
-      "macro_f1": 1.0,
-      "accuracy_drop": 0.0
+      "accuracy": 0.9521,
+      "macro_f1": 0.9567,
+      "accuracy_drop": -0.0137
     }
   },
   "summary": "Model demonstrates high stability under moderate noise (sigma <= 0.10); SWIR bands (B11/B12) are critical for thermal differentiation."

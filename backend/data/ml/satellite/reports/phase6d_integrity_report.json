@@ -1,12 +1,12 @@
 {
-  "integrity_status": "PASSED",
-  "test_sample_count": 153,
-  "train_sample_count": 743,
-  "val_sample_count": 154,
+  "integrity_status": "FAILED",
+  "test_sample_count": 146,
+  "train_sample_count": 673,
+  "val_sample_count": 130,
   "test_class_distribution": {
+    "NON_FIRE": 55,
     "WILDFIRE": 53,
-    "INDUSTRIAL_FIRE": 40,
-    "NON_FIRE": 60
+    "INDUSTRIAL_FIRE": 38
   },
   "id_duplicates_in_test": 0,
   "id_overlap": {
@@ -15,11 +15,17 @@
     "train_val": 0
   },
   "spatial_cluster_overlap": {
-    "train_test": 0,
-    "val_test": 0,
-    "train_val": 0
+    "train_test": 20,
+    "val_test": 15,
+    "train_val": 17
   },
-  "leakage_verdict": "ZERO_LEAKAGE",
-  "errors": [],
-  "warnings": []
+  "leakage_verdict": "LEAKAGE_DETECTED",
+  "errors": [
+    "Spatial cluster overlap between Train and Test: ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50', 'cluster_21.50_81.50', 'cluster_22.00_72.50', 'cluster_21.50_73.00', 'cluster_21.00_85.50', 'cluster_22.50_70.00', 'cluster_20.50_73.00', 'cluster_17.50_83.00', 'cluster_21.00_85.00', 'cluster_22.50_85.00', 'cluster_13.00_80.50', 'cluster_21.00_81.50', 'cluster_-35.50_150.00', 'cluster_21.00_73.00', 'cluster_13.50_80.50', 'cluster_21.00_72.50', 'cluster_38.50_24.00', 'cluster_18.00_83.50']",
+    "Spatial cluster overlap between Validation and Test: ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50', 'cluster_22.00_72.50', 'cluster_21.00_81.50', 'cluster_-35.50_150.00', 'cluster_22.50_70.00', 'cluster_21.00_85.50', 'cluster_20.50_73.00', 'cluster_21.00_72.50', 'cluster_38.50_24.00', 'cluster_18.00_83.50', 'cluster_21.00_85.00', 'cluster_22.50_85.00', 'cluster_21.50_81.50']",
+    "Spatial cluster overlap between Train and Validation: ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50', 'cluster_22.00_72.50', 'cluster_21.00_81.50', 'cluster_-35.50_150.00', 'cluster_22.50_70.00', 'cluster_21.00_85.50', 'cluster_17.50_83.50', 'cluster_24.50_83.00', 'cluster_20.50_73.00', 'cluster_21.00_72.50', 'cluster_38.50_24.00', 'cluster_18.00_83.50', 'cluster_21.00_85.00', 'cluster_22.50_85.00', 'cluster_21.50_81.50']"
+  ],
+  "warnings": [
+    "Test set contains 146 samples (expected 153)."
+  ]
 }

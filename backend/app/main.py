@@ -10,7 +10,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, Query, HTTPException, Body
+from fastapi import FastAPI, Query, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -63,6 +63,8 @@ from app.services.fire_spread_service import calculate_spread_projection
 from app.services.future_impact_service import calculate_future_impact_forecast
 from app.services.simulation_service import run_what_if_simulation
 from app.services.satellite_orbit_service import get_orbital_telemetry
+from app.agent.router import router as agent_router
+from app.auth import get_current_user, AuthenticatedUser, require_role
 
 logger = logging.getLogger("sih_backend")
 
@@ -81,6 +83,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount Anomaly Intelligence Agent router (Phase 1)
+app.include_router(agent_router, prefix="/api/agent", tags=["Anomaly Intelligence Agent"])
 
 
 @app.on_event("startup")
@@ -881,10 +886,12 @@ async def evaluate_region_alerts(
 @app.post("/api/alerts/{alert_id}/acknowledge")
 def acknowledge_alert(
     alert_id: str,
-    user: str = Query("Operator", description="Operator name")
+    user: Optional[str] = Query(None, description="Operator name"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Transition alert status from NEW to ACKNOWLEDGED."""
-    alert, error = transition_alert_status(alert_id, "ACKNOWLEDGED", user=user)
+    operator_name = user or current_user.email or current_user.user_id or "Operator"
+    alert, error = transition_alert_status(alert_id, "ACKNOWLEDGED", user=operator_name)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return alert
@@ -893,10 +900,12 @@ def acknowledge_alert(
 @app.post("/api/alerts/{alert_id}/investigate")
 def investigate_alert(
     alert_id: str,
-    user: str = Query("Operator", description="Operator name")
+    user: Optional[str] = Query(None, description="Operator name"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Transition alert status from ACKNOWLEDGED to INVESTIGATING."""
-    alert, error = transition_alert_status(alert_id, "INVESTIGATING", user=user)
+    operator_name = user or current_user.email or current_user.user_id or "Operator"
+    alert, error = transition_alert_status(alert_id, "INVESTIGATING", user=operator_name)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return alert
@@ -905,11 +914,13 @@ def investigate_alert(
 @app.post("/api/alerts/{alert_id}/resolve")
 def resolve_alert(
     alert_id: str,
-    user: str = Query("Operator", description="Operator name"),
-    notes: Optional[str] = Query(None, description="Resolution notes")
+    user: Optional[str] = Query(None, description="Operator name"),
+    notes: Optional[str] = Query(None, description="Resolution notes"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Transition alert status to RESOLVED."""
-    alert, error = transition_alert_status(alert_id, "RESOLVED", user=user, notes=notes)
+    operator_name = user or current_user.email or current_user.user_id or "Operator"
+    alert, error = transition_alert_status(alert_id, "RESOLVED", user=operator_name, notes=notes)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return alert
@@ -918,11 +929,13 @@ def resolve_alert(
 @app.post("/api/alerts/{alert_id}/dismiss")
 def dismiss_alert(
     alert_id: str,
-    user: str = Query("Operator", description="Operator name"),
-    notes: Optional[str] = Query(None, description="Dismissal reason")
+    user: Optional[str] = Query(None, description="Operator name"),
+    notes: Optional[str] = Query(None, description="Dismissal reason"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Transition alert status to DISMISSED."""
-    alert, error = transition_alert_status(alert_id, "DISMISSED", user=user, notes=notes)
+    operator_name = user or current_user.email or current_user.user_id or "Operator"
+    alert, error = transition_alert_status(alert_id, "DISMISSED", user=operator_name, notes=notes)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return alert
@@ -1233,7 +1246,8 @@ async def get_hotspot_evidence_fusion(
 )
 async def get_hotspot_investigation(
     observation_id: str,
-    force_refresh: bool = Query(False, description="Force live refresh bypassing cache")
+    force_refresh: bool = Query(False, description="Force live refresh bypassing cache"),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Phase 6F Canonical Investigation Endpoint.
@@ -1256,7 +1270,8 @@ async def get_hotspot_investigation(
 )
 async def get_hotspot_decision_support(
     observation_id: str,
-    force_refresh: bool = Query(False, description="Force live refresh bypassing cache")
+    force_refresh: bool = Query(False, description="Force live refresh bypassing cache"),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Phase 6H Canonical Decision Support Endpoint.
@@ -1277,12 +1292,16 @@ async def get_hotspot_decision_support(
 )
 def record_incident_operational_action(
     observation_id: str,
-    action_req: IncidentActionRequest
+    action_req: IncidentActionRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """
     Phase 6I Incident Action Endpoint.
+    Derives actor_id from verified JWT session.
     """
     try:
+        if not action_req.user or action_req.user.lower() in ("operator", "system", "anonymous"):
+            action_req.user = current_user.email or current_user.user_id
         service = get_incident_audit_service()
         return service.record_action(observation_id, action_req)
     except ValueError as e:
@@ -1300,7 +1319,8 @@ def record_incident_operational_action(
 )
 def get_incident_audit_trail(
     observation_id: str,
-    descending: bool = Query(True, description="Return audit events in descending chronological order")
+    descending: bool = Query(True, description="Return audit events in descending chronological order"),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Phase 6I Incident Audit Trail Endpoint.
@@ -1321,7 +1341,9 @@ def get_incident_audit_trail(
     summary="Get Fleet-Wide Operational Triage Summary",
     description="Aggregates active vs resolved status distribution, P1/P2 critical counts, and triage throughput across the incident fleet."
 )
-def get_incident_fleet_operational_summary():
+def get_incident_fleet_operational_summary(
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """
     Phase 6I Operational Fleet Summary Endpoint.
     """

@@ -1,30 +1,27 @@
 {
-  "audit_status": "PASSED",
-  "total_samples": 1050,
+  "audit_status": "FAILED",
+  "total_samples": 949,
   "samples_per_class": {
-    "WILDFIRE": 400,
-    "INDUSTRIAL_FIRE": 250,
-    "NON_FIRE": 400
+    "WILDFIRE": 349,
+    "NON_FIRE": 350,
+    "INDUSTRIAL_FIRE": 250
   },
   "samples_per_source": {
-    "SEN2FIRE": 240,
-    "TS_SATFIRE": 160,
-    "FIRMS_OSM_INDUSTRIAL_WEAK": 250,
-    "DIVERSE_GEOGRAPHIC_BACKGROUND": 400
+    "SEN2FIRE": 699,
+    "FIRMS_OSM_INDUSTRIAL_WEAK": 250
   },
   "samples_per_label_type": {
-    "SOURCE_LABEL": 400,
-    "WEAK_LABEL": 539,
-    "GROUND_TRUTH": 111
+    "GROUND_TRUTH": 699,
+    "WEAK_LABEL": 250
   },
   "samples_per_quality": {
-    "GOOD": 742,
-    "ACCEPTABLE": 308
+    "GOOD": 853,
+    "ACCEPTABLE": 96
   },
   "samples_per_split": {
-    "train": 743,
-    "validation": 154,
-    "test": 153
+    "train": 673,
+    "validation": 130,
+    "test": 146
   },
   "missing_files_count": 0,
   "invalid_files_count": 0,
@@ -32,13 +29,13 @@
   "duplicate_samples_count": 0,
   "leakage_audit": {
     "sample_id_overlap": 0,
-    "spatial_cluster_overlap": 0,
-    "status": "PASSED"
+    "spatial_cluster_overlap": 52,
+    "status": "FAILED"
   },
   "cloud_distribution": {
-    "0-10%": 185,
-    "10-30%": 557,
-    "30-60%": 308,
+    "0-10%": 388,
+    "10-30%": 465,
+    "30-60%": 96,
     ">60%": 0
   },
   "band_availability": {
@@ -53,12 +50,14 @@
     "all_6_bands_present_in_all_patches": true
   },
   "label_provenance_summary": {
-    "GROUND_TRUTH": 111,
-    "SOURCE_LABEL": 400,
-    "WEAK_LABEL": 539,
+    "GROUND_TRUTH": 699,
+    "SOURCE_LABEL": 0,
+    "WEAK_LABEL": 250,
     "MANUAL_REVIEW": 0,
     "notes": "Wildfire candidate seeds labeled SOURCE_LABEL; FIRMS+OSM pairings labeled WEAK_LABEL."
   },
-  "errors": [],
+  "errors": [
+    "Spatial cluster overlap detected across splits (52 overlapping clusters)."
+  ],
   "warnings": []
 }

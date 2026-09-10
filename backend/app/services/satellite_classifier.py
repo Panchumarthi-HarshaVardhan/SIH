@@ -39,12 +39,27 @@ class TrainedSatelliteVisionClassifier(BaseSatelliteImageClassifier):
     def __init__(self, model_dir: str = SATELLITE_MODEL_DIR):
         self.model_dir = model_dir
         self.engine = None
+        self.is_multispectral = False
         self._init_engine()
 
     def _init_engine(self):
+        # 1. Prioritize trained 6-Band Sentinel-2 ResNet-18 model
+        try:
+            from app.ml.satellite_model.inference import get_inference_engine
+            ms_engine = get_inference_engine()
+            if ms_engine.is_ready():
+                self.engine = ms_engine
+                self.is_multispectral = True
+                logger.info("TrainedSatelliteVisionClassifier using trained 6-Band MultispectralResNet18.")
+                return
+        except Exception as e:
+            logger.warning(f"Could not load 6-band multispectral engine: {e}")
+
+        # 2. Fallback to legacy PyTorch inference engine
         try:
             from app.ml.inference import get_inference_engine
             self.engine = get_inference_engine()
+            self.is_multispectral = False
         except Exception as e:
             logger.error(f"Failed to initialize PyTorch inference engine: {e}")
             self.engine = None
@@ -52,7 +67,12 @@ class TrainedSatelliteVisionClassifier(BaseSatelliteImageClassifier):
     def classify_image(self, image_path: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         timestamp_str = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
 
-        if not self.engine or not self.engine.is_loaded:
+        if getattr(self, "is_multispectral", False) and self.engine and self.engine.is_ready():
+            res = self.engine.predict(image_path, metadata=metadata)
+            res["timestamp"] = timestamp_str
+            return res
+
+        if not self.engine or not getattr(self.engine, "is_loaded", False):
             return {
                 "classification": "UNKNOWN",
                 "confidence": 0.0,
@@ -211,12 +231,14 @@ def get_satellite_classifier() -> BaseSatelliteImageClassifier:
     """
     global _classifier_instance
 
+    from app.ml.satellite_model.config import BEST_MODEL_PT
     weights_path = os.path.join(SATELLITE_MODEL_DIR, "best_model.pth")
-    use_trained = (SATELLITE_CLASSIFIER.lower() == "trained") and os.path.exists(weights_path)
+    has_weights = os.path.exists(BEST_MODEL_PT) or os.path.exists(weights_path)
+    use_trained = (SATELLITE_CLASSIFIER.lower() == "trained") or has_weights
 
     if _classifier_instance is None:
-        if use_trained:
-            logger.info("Initializing TrainedSatelliteVisionClassifier with PyTorch model weights.")
+        if use_trained and has_weights:
+            logger.info("Initializing TrainedSatelliteVisionClassifier with PyTorch 6-Band / ResNet model weights.")
             _classifier_instance = TrainedSatelliteVisionClassifier(model_dir=SATELLITE_MODEL_DIR)
         else:
             logger.info("Initializing ModularHeuristicVisionClassifier fallback.")

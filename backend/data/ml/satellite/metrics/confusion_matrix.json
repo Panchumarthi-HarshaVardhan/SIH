@@ -1,0 +1,24 @@
+{
+  "labels": [
+    "NON_FIRE",
+    "WILDFIRE",
+    "INDUSTRIAL_FIRE"
+  ],
+  "matrix": [
+    [
+      50,
+      5,
+      0
+    ],
+    [
+      4,
+      49,
+      0
+    ],
+    [
+      0,
+      0,
+      38
+    ]
+  ]
+}

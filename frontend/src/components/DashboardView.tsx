@@ -190,6 +190,7 @@ export function DashboardView({
     const matchingPri = priorityItems.find((p) => (p.cluster_id || p.hotspot_id) === item.id);
     if (matchingPri && onSelectPriorityIncident) {
       onSelectPriorityIncident(matchingPri);
+      return;
     }
 
     const matchingHotspot = hotspots.find((h) => h.observation_id === item.id);

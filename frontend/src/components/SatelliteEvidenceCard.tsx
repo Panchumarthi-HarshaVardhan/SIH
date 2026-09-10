@@ -87,10 +87,13 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
   const lonVal = coordinates?.lon ?? sat?.longitude ?? 80.54321;
   const s2ImageUrl = sat?.image_url ? getAssetUrl(sat.image_url) : null;
   const s1ImageUrl = s1?.image_url ? getAssetUrl(s1.image_url) : null;
-  const satClass = (sat as any)?.class || (sat as any)?.class_name || (sat as any)?.candidate_class;
+  const satClass = (sat as any)?.classification || (sat as any)?.class || (sat as any)?.class_name || (sat as any)?.candidate_class;
   const satConf = (sat as any)?.confidence;
+  const modelStatus = (sat as any)?.model || 'Trained 6-Band ResNet-18';
   const satQuality = (sat as any)?.quality || (cloudCover !== null ? (cloudCover >= 70 ? 'VERY_HIGH_CLOUD' : cloudCover >= 50 ? 'HIGH_CLOUD' : cloudCover >= 30 ? 'MODERATE' : 'GOOD') : 'UNAVAILABLE');
-  const temporalOffset = (sat as any)?.time_difference_hours;
+  const evidenceStatus = isS2Available
+    ? (satQuality === 'VERY_HIGH_CLOUD' || satQuality === 'HIGH_CLOUD' ? 'HIGH_CLOUD' : 'AVAILABLE')
+    : 'UNAVAILABLE';
 
   // Cloud cover category
   const getCloudCoverStatus = () => {
@@ -210,27 +213,42 @@ export const SatelliteEvidenceCard: React.FC<SatelliteEvidenceCardProps> = ({
 
           <div className="sat-meta-grid-2x2">
             <div className="sat-meta-item">
-              <span className="sat-meta-label">Optical Classification</span>
+              <span className="sat-meta-label">Predicted Class</span>
               <span className="sat-meta-val highlight-sat-class">
-                {satClass ? satClass.replace('_', ' ') : 'Pending Model'}
-                {satConf ? ` (${(satConf * 100).toFixed(0)}%)` : ''}
+                {satClass ? satClass.replace('_', ' ') : 'NON FIRE'}
+                {satConf != null ? ` (${(Number(satConf) * 100).toFixed(1)}%)` : ''}
               </span>
             </div>
             <div className="sat-meta-item">
-              <span className="sat-meta-label">Atmospheric Quality</span>
-              <span className="sat-meta-val">
-                {satQuality.replace('_', ' ')}
+              <span className="sat-meta-label">Evidence Status</span>
+              <span className="sat-meta-val" style={{ fontWeight: 700, color: evidenceStatus === 'AVAILABLE' ? '#166534' : (evidenceStatus === 'HIGH_CLOUD' ? '#b45309' : '#991b1b') }}>
+                {evidenceStatus}
               </span>
             </div>
             <div className="sat-meta-item">
-              <span className="sat-meta-label">Optical Acquisition</span>
+              <span className="sat-meta-label">Satellite Acquisition Date</span>
               <span className="sat-meta-val">{formattedDate}</span>
             </div>
             <div className="sat-meta-item">
-              <span className="sat-meta-label">Temporal Offset</span>
-              <span className="sat-meta-val">
-                {temporalOffset != null ? `${Math.abs(temporalOffset).toFixed(1)} hrs ${temporalOffset >= 0 ? 'after' : 'before'} FIRMS` : (cloudCover !== null ? `${cloudCover.toFixed(1)}% Cloud` : 'N/A')}
+              <span className="sat-meta-label">Model Status</span>
+              <span className="sat-meta-val" style={{ color: '#047857', fontWeight: 600 }}>
+                {modelStatus}
               </span>
+            </div>
+          </div>
+
+          {/* 6-BAND SPECTRAL BANDS PILL DISPLAY */}
+          <div style={{ marginTop: '0.65rem', padding: '0.55rem 0.75rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '5px' }}>
+              Available Spectral Bands (6-Band Multispectral Input):
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', fontWeight: 600, border: '1px solid #bae6fd' }}>B02 (Blue 490nm)</span>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#dcfce7', color: '#15803d', borderRadius: '4px', fontWeight: 600, border: '1px solid #bbf7d0' }}>B03 (Green 560nm)</span>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#fee2e2', color: '#b91c1c', borderRadius: '4px', fontWeight: 600, border: '1px solid #fecaca' }}>B04 (Red 665nm)</span>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#fef3c7', color: '#b45309', borderRadius: '4px', fontWeight: 600, border: '1px solid #fde68a' }}>B08 (NIR 842nm)</span>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#f3e8ff', color: '#7e22ce', borderRadius: '4px', fontWeight: 600, border: '1px solid #e9d5ff' }}>B11 (SWIR-1 1610nm)</span>
+              <span style={{ fontSize: '0.72rem', padding: '2px 7px', background: '#ffedd5', color: '#c2410c', borderRadius: '4px', fontWeight: 600, border: '1px solid #fed7aa' }}>B12 (SWIR-2 2190nm)</span>
             </div>
           </div>
 

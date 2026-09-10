@@ -91,6 +91,84 @@ class InvestigationService:
         all_obs = load_stored_observations()
         target_obs = next((obs for obs in all_obs if obs.get("observation_id") == clean_id), None)
 
+        # 2a. If not found, check if clean_id is an alert ID (ALT-...) or alert cluster ID (FIRMS_...)
+        if not target_obs:
+            from app.services.alert_service import _load_alerts_db
+            alerts = _load_alerts_db()
+            matched_alert = next((a for a in alerts if a.get("alert_id") == clean_id or a.get("cluster_id") == clean_id), None)
+            if matched_alert:
+                alert_cluster_id = (matched_alert.get("cluster_id") or "").replace("FIRMS_", "")
+                target_obs = next((obs for obs in all_obs if obs.get("observation_id") == alert_cluster_id), None)
+                if not target_obs and matched_alert.get("latitude") and matched_alert.get("longitude"):
+                    target_obs = {
+                        "observation_id": clean_id,
+                        "latitude": float(matched_alert["latitude"]),
+                        "longitude": float(matched_alert["longitude"]),
+                        "frp": float(matched_alert.get("frp") or matched_alert.get("features", {}).get("frp", 25.0)),
+                        "brightness": float(matched_alert.get("features", {}).get("brightness", 335.0)),
+                        "confidence": "high",
+                        "acquired_at": matched_alert.get("created_at") or datetime.now(timezone.utc).isoformat(),
+                        "satellite": "VIIRS",
+                        "instrument": "VIIRS",
+                        "source": "NASA FIRMS",
+                    }
+
+        # 2b. If not found, check if clean_id matches a cluster or cluster ID (e.g. cluster_8.463_81.115)
+        if not target_obs and ("cluster" in clean_id.lower() or "clust" in clean_id.lower()):
+            from app.services.persistence_service import detect_persistent_clusters
+            clusters_dict = await detect_persistent_clusters(region="india")
+            clusters_res = clusters_dict.get("clusters", [])
+            matched_clust = next((c for c in clusters_res if c.get("cluster_id") == clean_id), None)
+            if matched_clust:
+                if matched_clust.get("observations"):
+                    target_obs = matched_clust["observations"][0]
+                else:
+                    target_obs = {
+                        "observation_id": clean_id,
+                        "latitude": float(matched_clust.get("center_latitude", 20.0)),
+                        "longitude": float(matched_clust.get("center_longitude", 78.0)),
+                        "frp": float(matched_clust.get("total_frp", 25.0)),
+                        "brightness": 340.0,
+                        "confidence": "nominal",
+                        "acquired_at": matched_clust.get("last_detected") or datetime.now(timezone.utc).isoformat(),
+                        "satellite": "VIIRS",
+                        "instrument": "VIIRS",
+                        "source": "NASA FIRMS",
+                    }
+
+        # 2c. If not found, check if clean_id is coordinate-encoded: HOTSPOT_{lat}_{lon} or SPOT-{lat}_{lon}
+        if not target_obs and ("HOTSPOT_" in clean_id or "SPOT-" in clean_id):
+            try:
+                parts = clean_id.replace("HOTSPOT_", "").replace("SPOT-", "").split("_")
+                if len(parts) >= 2:
+                    p_lat = float(parts[0])
+                    p_lon = float(parts[1])
+                    nearest = min(
+                        all_obs,
+                        key=lambda o: ((float(o.get("latitude", 0)) - p_lat)**2 + (float(o.get("longitude", 0)) - p_lon)**2)
+                    ) if all_obs else None
+                    if nearest and ((float(nearest.get("latitude", 0)) - p_lat)**2 + (float(nearest.get("longitude", 0)) - p_lon)**2) < 0.005:
+                        target_obs = nearest
+                    else:
+                        target_obs = {
+                            "observation_id": clean_id,
+                            "latitude": p_lat,
+                            "longitude": p_lon,
+                            "frp": 25.0,
+                            "brightness": 335.0,
+                            "confidence": "nominal",
+                            "acquired_at": datetime.now(timezone.utc).isoformat(),
+                            "satellite": "NASA FIRMS",
+                            "instrument": "VIIRS",
+                            "source": "NASA FIRMS",
+                        }
+            except Exception as ex:
+                logger.warning(f"Could not parse coordinate observation ID '{clean_id}': {ex}")
+
+        # 2d. If still not found, check if clean_id matches substring in observation IDs
+        if not target_obs:
+            target_obs = next((obs for obs in all_obs if clean_id in obs.get("observation_id", "") or obs.get("observation_id", "") in clean_id), None)
+
         if not target_obs:
             raise HTTPException(status_code=404, detail=f"Observation with ID '{clean_id}' not found.")
 
@@ -215,7 +293,9 @@ class InvestigationService:
                         "classification": pred["predicted_class"],
                         "confidence": pred["confidence"],
                         "class_probabilities": pred["class_probabilities"],
-                        "model": "MultispectralCNN-Phase6C",
+                        "model": pred.get("model", "Trained 6-Band ResNet-18"),
+                        "available_bands": pred.get("available_bands", ["B02", "B03", "B04", "B08", "B11", "B12"]),
+                        "visual_evidence": pred.get("visual_evidence", ""),
                         "is_calibrated": False
                     }
                 else:
@@ -229,7 +309,9 @@ class InvestigationService:
                         "classification": res.get("classification", "UNKNOWN"),
                         "confidence": res.get("confidence", 0.0),
                         "class_probabilities": res.get("class_probabilities", {}),
-                        "model": res.get("model", "MultispectralCNN-Phase6C"),
+                        "model": res.get("model", "Trained 6-Band ResNet-18"),
+                        "available_bands": res.get("available_bands", ["B02", "B03", "B04", "B08", "B11", "B12"]),
+                        "visual_evidence": res.get("visual_evidence", ""),
                         "is_calibrated": False
                     }
             except Exception as ex:

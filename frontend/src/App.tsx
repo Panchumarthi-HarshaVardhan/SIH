@@ -20,8 +20,11 @@ import {
 import { getApiUrl, fetchLatestFirmsObservation, getDecisionSupport, DEMO_SCENARIO_PRESETS } from './config/api';
 import { LandingPage } from './components/landing/LandingPage';
 import { MissionControlBackground } from './components/MissionControlBackground';
+import { AnomalyIntelligenceAgentDrawer } from './components/agent';
+import { AuthProvider } from './auth';
+import { AuthGate } from './components/auth/AuthGate';
 
-export function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<AppView>('landing');
   const [region, setRegion] = useState<string>('india');
   const [customBbox, setCustomBbox] = useState<string>('');
@@ -274,7 +277,20 @@ export function App() {
 
   const handleSelectPriorityIncident = useCallback((p: PriorityRankingItem) => {
     setSelectedPriorityIncident(p);
-    setSelectedHotspot(null);
+    const obsId = p.hotspot_id || p.cluster_id;
+    const fallbackHotspot: Hotspot = {
+      observation_id: obsId,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      brightness: p.brightness || 340.0,
+      confidence: p.confidence || 'nominal',
+      frp: p.frp || 25.0,
+      acquired_at: new Date().toISOString(),
+      satellite: p.data_source || 'NASA FIRMS',
+      instrument: 'VIIRS',
+      source: 'NASA FIRMS',
+    };
+    setSelectedHotspot(fallbackHotspot);
     setSelectedCluster(null);
     setSelectedAlert(null);
     setShowDetailPanel(true);
@@ -282,7 +298,6 @@ export function App() {
       setMapCenterCoords([p.latitude, p.longitude]);
       setMapZoomLevel(12);
     }
-    const obsId = p.hotspot_id || p.cluster_id;
     loadDecisionSupportForMap(obsId, p.latitude, p.longitude);
   }, [loadDecisionSupportForMap]);
 
@@ -475,23 +490,52 @@ export function App() {
           hotspot={selectedHotspot}
           cluster={selectedCluster}
           alert={selectedAlert}
+          priorityIncident={selectedPriorityIncident}
           onClose={handleCloseDetailPanel}
           onStatusChange={handleAlertStatusChange}
         />
       )}
 
-      {/* 4. FOOTER */}
-      <footer className="app-footer">
-        <div className="footer-left">
-          <span>SIH Problem Statement 26162</span>
-          <span className="footer-dot">•</span>
-          <span>Industrial Fire & Thermal Source Intelligence</span>
-        </div>
-        <div className="footer-right">
-          <span>Sensors: NASA FIRMS (VIIRS/MODIS) • Copernicus Sentinel-2 L2A • OpenStreetMap</span>
-        </div>
-      </footer>
+      {/* 4. ANOMALY INTELLIGENCE AGENT OPERATIONAL DRAWER (Phase 3) */}
+      <AnomalyIntelligenceAgentDrawer
+        hotspots={hotspotsData?.hotspots || []}
+        selectedObservationId={
+          selectedHotspot?.observation_id ||
+          selectedPriorityIncident?.hotspot_id ||
+          selectedPriorityIncident?.cluster_id ||
+          (selectedAlert?.cluster_id ? selectedAlert.cluster_id.replace('FIRMS_', '') : selectedAlert?.alert_id) ||
+          null
+        }
+        onSelectObservation={(obsId) => {
+          const found = (hotspotsData?.hotspots || []).find(
+            (h) => h.observation_id === obsId || (h as any).id === obsId
+          );
+          if (found) {
+            handleSelectHotspot(found);
+          }
+        }}
+        onZoomToCoords={(lat, lon, zoom) => {
+          setMapCenterCoords([lat, lon]);
+          setMapZoomLevel(zoom || 14);
+        }}
+        onFilterChange={(filters) => {
+          console.log('[App] Agent applied filters:', filters);
+        }}
+        onHighlightObservations={(ids) => {
+          console.log('[App] Agent highlighted observations:', ids);
+        }}
+      />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <AuthGate>
+        <AppContent />
+      </AuthGate>
+    </AuthProvider>
   );
 }
 

@@ -22,6 +22,7 @@ import {
   ExposedAsset,
   PriorityRankingItem,
 } from '../types/hotspot';
+import { filterThermalPointsInsideIndia, isPointInsideIndia } from '../utils/geoUtils';
 
 interface FireMapProps {
   viewMode?: 'hotspots' | 'clusters';
@@ -260,6 +261,21 @@ export const FireMap: React.FC<FireMapProps> = ({
 }) => {
   const effectiveCenter: [number, number] = center || mapCenter || [20.5937, 78.9629];
   const effectiveZoom: number = zoom || mapZoom || 5;
+
+  // Filter thermal hotspots strictly within India's boundary polygon
+  const indiaHotspots = React.useMemo(() => {
+    return filterThermalPointsInsideIndia(hotspots);
+  }, [hotspots]);
+
+  // Filter persistent clusters with center coordinates inside India
+  const indiaClusters = React.useMemo(() => {
+    return clusters.filter((c) => c && isPointInsideIndia(c.center_latitude, c.center_longitude));
+  }, [clusters]);
+
+  // Filter active alerts with coordinates inside India
+  const indiaAlerts = React.useMemo(() => {
+    return activeAlerts.filter((a) => a && isPointInsideIndia(a.latitude, a.longitude));
+  }, [activeAlerts]);
 
   // Basemap Switcher State (Standard vs Satellite)
   const [internalBasemap, setInternalBasemap] = useState<'standard' | 'satellite'>(basemap);
@@ -1190,7 +1206,7 @@ export const FireMap: React.FC<FireMapProps> = ({
         ))}
 
         {/* ACTIVE ALERTS MARKERS OVERLAY */}
-        {activeAlerts.map((alt) => {
+        {indiaAlerts.map((alt) => {
           const isSelected = selectedAlert && selectedAlert.alert_id === alt.alert_id;
           const color = alt.risk_level === 'CRITICAL' ? '#ef4444' : '#f97316';
           const radius = isSelected ? 12 : 8;
@@ -1250,7 +1266,7 @@ export const FireMap: React.FC<FireMapProps> = ({
 
         {/* MODE 1: Single Hotspots View with Subtle, Clear Points */}
         {viewMode === 'hotspots' &&
-          hotspots.map((spot, index) => {
+          indiaHotspots.map((spot, index) => {
             const severity = getSeverity(spot.frp);
             const color = getSeverityColor(severity);
             const isSelected =
@@ -1310,7 +1326,7 @@ export const FireMap: React.FC<FireMapProps> = ({
 
         {/* MODE 2: Persistent Thermal Clusters View */}
         {viewMode === 'clusters' &&
-          clusters.map((cluster, index) => {
+          indiaClusters.map((cluster, index) => {
             const isSelected =
               selectedCluster && selectedCluster.cluster_id === cluster.cluster_id;
             const radius = isSelected ? 12 : 7;

@@ -37,9 +37,14 @@ class GradCAM:
 
     def __init__(self, model: nn.Module, target_layer: Optional[nn.Module] = None):
         self.model = model
-        self.model.eval()
-        self.target_layer = target_layer if target_layer is not None else model.block3
-        self.gradients: Optional[torch.Tensor] = None
+        if target_layer is not None:
+            self.target_layer = target_layer
+        elif hasattr(model, "block3"):
+            self.target_layer = model.block3
+        elif hasattr(model, "backbone") and hasattr(model.backbone, "layer4"):
+            self.target_layer = model.backbone.layer4
+        else:
+            self.target_layer = list(model.children())[-2]
         self.activations: Optional[torch.Tensor] = None
 
         # Hook registration

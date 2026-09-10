@@ -63,10 +63,10 @@ def verify_test_set_integrity(
     if overlap_train_val:
         errors.append(f"Found {len(overlap_train_val)} overlapping sample IDs between train and validation splits!")
 
-    # 4. Spatial Cluster Overlap (Geographic Leakage Check)
-    train_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in train_entries}
-    val_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in val_entries}
-    test_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in test_entries}
+    # 4. Spatial Cluster Overlap (Geographic Leakage Check for geolocated samples)
+    train_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in train_entries if not (abs(e.latitude) < 1e-4 and abs(e.longitude) < 1e-4)}
+    val_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in val_entries if not (abs(e.latitude) < 1e-4 and abs(e.longitude) < 1e-4)}
+    test_clusters = {get_spatial_cluster_key(e.latitude, e.longitude) for e in test_entries if not (abs(e.latitude) < 1e-4 and abs(e.longitude) < 1e-4)}
 
     spatial_overlap_tt = train_clusters.intersection(test_clusters)
     spatial_overlap_vt = val_clusters.intersection(test_clusters)

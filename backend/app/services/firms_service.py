@@ -49,6 +49,50 @@ APP_DIR = os.path.dirname(SERVICES_DIR)                  # backend/app
 BACKEND_DIR = os.path.dirname(APP_DIR)                     # backend
 PROJECT_ROOT = os.path.dirname(BACKEND_DIR)                # SIH-26162
 BACKUP_PATH = os.path.join(PROJECT_ROOT, "data", "raw", "firms_latest_backup.json")
+INDIA_GEOJSON_PATH = os.path.join(PROJECT_ROOT, "data", "geojson", "india_boundary.json")
+
+_india_geom = None
+
+
+def _get_india_geometry():
+    """Lazily load and cache the India boundary MultiPolygon."""
+    global _india_geom
+    if _india_geom is not None:
+        return _india_geom
+    if os.path.exists(INDIA_GEOJSON_PATH):
+        try:
+            from shapely.geometry import shape
+            with open(INDIA_GEOJSON_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                _india_geom = shape(data["features"][0]["geometry"])
+        except Exception as e:
+            logger.warning(f"Unable to load India boundary geometry: {e}")
+    return _india_geom
+
+
+def is_point_inside_india(lat: Optional[float], lon: Optional[float]) -> bool:
+    """Check if (lat, lon) falls strictly inside India's territorial boundary."""
+    if lat is None or lon is None:
+        return False
+    try:
+        f_lat = float(lat)
+        f_lon = float(lon)
+    except (ValueError, TypeError):
+        return False
+
+    # Rapid bounding box reject
+    if not (6.5 <= f_lat <= 37.5 and 68.0 <= f_lon <= 97.5):
+        return False
+
+    geom = _get_india_geometry()
+    if geom is None:
+        return True
+
+    try:
+        from shapely.geometry import Point
+        return bool(geom.contains(Point(f_lon, f_lat)))
+    except Exception:
+        return True
 
 
 def _normalize_satellite_name(sat_code: str, default_name: str) -> str:
@@ -277,6 +321,13 @@ async def fetch_firms_hotspots(
         else:
             # Update local backup file with freshly retrieved online hotspots
             _save_backup_hotspots(hotspots)
+
+    # Filter strictly to India territorial boundary if region is india and not custom bbox
+    if region.lower().strip() == "india" and not custom_bbox:
+        hotspots = [
+            h for h in hotspots
+            if is_point_inside_india(h.get("latitude"), h.get("longitude"))
+        ]
 
     # Build standardized response
     response_data = {

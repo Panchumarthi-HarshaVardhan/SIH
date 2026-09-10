@@ -1,0 +1,51 @@
+{
+  "accuracy": 0.9384,
+  "balanced_accuracy": 0.9445,
+  "macro_precision": 0.9444,
+  "macro_recall": 0.9445,
+  "macro_f1": 0.9444,
+  "weighted_f1": 0.9384,
+  "per_class": {
+    "NON_FIRE": {
+      "precision": 0.9259,
+      "recall": 0.9091,
+      "f1_score": 0.9174,
+      "support": 55
+    },
+    "WILDFIRE": {
+      "precision": 0.9074,
+      "recall": 0.9245,
+      "f1_score": 0.9159,
+      "support": 53
+    },
+    "INDUSTRIAL_FIRE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 38
+    }
+  },
+  "confusion_matrix": [
+    [
+      50,
+      5,
+      0
+    ],
+    [
+      4,
+      49,
+      0
+    ],
+    [
+      0,
+      0,
+      38
+    ]
+  ],
+  "class_labels": [
+    "NON_FIRE",
+    "WILDFIRE",
+    "INDUSTRIAL_FIRE"
+  ],
+  "total_test_samples": 146
+}

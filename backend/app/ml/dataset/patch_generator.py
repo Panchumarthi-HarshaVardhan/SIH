@@ -135,11 +135,12 @@ def load_multispectral_patch(npz_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"Multispectral patch not found at: {npz_path}")
 
     with np.load(npz_path) as data:
-        meta_str = str(data["metadata"])
-        try:
-            meta = json.loads(meta_str)
-        except Exception:
-            meta = {}
+        meta = {}
+        if "metadata" in data:
+            try:
+                meta = json.loads(str(data["metadata"]))
+            except Exception:
+                meta = {}
 
         return {
             "B02": data["B02"],

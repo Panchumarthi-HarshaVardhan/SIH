@@ -1,38 +1,39 @@
 {
-  "status": "PASSED",
-  "total_samples": 1050,
+  "status": "FAILED",
+  "total_samples": 949,
   "class_distribution": {
-    "WILDFIRE": 400,
-    "INDUSTRIAL_FIRE": 250,
-    "NON_FIRE": 400
+    "WILDFIRE": 349,
+    "NON_FIRE": 350,
+    "INDUSTRIAL_FIRE": 250
   },
   "label_type_distribution": {
-    "SOURCE_LABEL": 400,
-    "WEAK_LABEL": 539,
-    "GROUND_TRUTH": 111
+    "GROUND_TRUTH": 699,
+    "WEAK_LABEL": 250
   },
   "quality_distribution": {
-    "GOOD": 742,
-    "ACCEPTABLE": 308
+    "GOOD": 853,
+    "ACCEPTABLE": 96
   },
   "source_distribution": {
-    "SEN2FIRE": 240,
-    "TS_SATFIRE": 160,
-    "FIRMS_OSM_INDUSTRIAL_WEAK": 250,
-    "DIVERSE_GEOGRAPHIC_BACKGROUND": 400
+    "SEN2FIRE": 699,
+    "FIRMS_OSM_INDUSTRIAL_WEAK": 250
   },
   "cloud_histogram": {
-    "0-10%": 185,
-    "10-30%": 557,
-    "30-60%": 308,
+    "0-10%": 388,
+    "10-30%": 465,
+    "30-60%": 96,
     ">60%": 0
   },
   "split_counts": {
-    "train": 743,
-    "val": 154,
-    "test": 153
+    "train": 673,
+    "val": 130,
+    "test": 146
   },
-  "leakage_check": "PASSED",
-  "errors": [],
+  "leakage_check": "FAILED",
+  "errors": [
+    "Train/Val spatial cluster overlap (17 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50']",
+    "Train/Test spatial cluster overlap (20 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50']",
+    "Val/Test spatial cluster overlap (15 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50']"
+  ],
   "warnings": []
 }

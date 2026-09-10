@@ -72,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     });
     lenisRef.current = lenis;
@@ -91,7 +91,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       start: 'top top',
       end: 'bottom bottom',
       scrub: 0.8,
-      onUpdate: (self) => {
+      onUpdate: (self: { progress: number }) => {
         const p = self.progress;
         setScrollProgress(p);
         if (controllerRef.current) {
