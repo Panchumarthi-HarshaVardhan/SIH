@@ -19,6 +19,7 @@ import {
 } from './types/hotspot';
 import { getApiUrl, fetchLatestFirmsObservation, getDecisionSupport, DEMO_SCENARIO_PRESETS } from './config/api';
 import { LandingPage } from './components/landing/LandingPage';
+import { MissionControlBackground } from './components/MissionControlBackground';
 
 export function App() {
   const [currentView, setCurrentView] = useState<AppView>('landing');
@@ -373,6 +374,9 @@ export function App() {
 
   return (
     <div className="app-layout">
+      {/* 0. ATMOSPHERIC MISSION CONTROL STARFIELD CANVAS */}
+      <MissionControlBackground />
+
       {/* 1. TOP HEADER & NAVIGATION */}
       <TopBar
         currentView={currentView}

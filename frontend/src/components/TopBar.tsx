@@ -1,13 +1,14 @@
 import React from 'react';
 import { AppView } from '../types/hotspot';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faFire,
-  faTriangleExclamation,
-  faMap,
-  faBolt,
-  faGear,
-} from '@fortawesome/free-solid-svg-icons';
+  Orbit,
+  LayoutDashboard,
+  AlertTriangle,
+  Map as MapIcon,
+  Activity,
+  Settings,
+  Radio,
+} from 'lucide-react';
 
 interface TopBarProps {
   currentView: AppView;
@@ -18,74 +19,84 @@ export const TopBar: React.FC<TopBarProps> = ({ currentView, onViewChange }) => 
   return (
     <header className="app-topbar-wrapper">
       <div className="app-topbar">
-        {/* BRAND IDENTITY */}
-        <div className="topbar-brand" onClick={() => onViewChange('dashboard')} style={{ cursor: 'pointer' }}>
+        {/* BRAND IDENTITY: NASA-STYLE MISSION CONTROL */}
+        <div className="topbar-brand" onClick={() => onViewChange('dashboard')} role="button" tabIndex={0}>
           <div className="brand-icon-box">
-            <FontAwesomeIcon icon={faFire} className="brand-fa-icon" />
+            <Radio size={18} className="brand-radar-icon" />
           </div>
           <div className="brand-titles">
-            <h1 className="brand-main-title">Industrial Fire Intelligence</h1>
+            <div className="brand-title-row">
+              <span className="brand-main-title">THERMOSCOPE</span>
+              <span className="brand-mission-badge">MISSION CONTROL</span>
+            </div>
+            <span className="brand-sub-title">SATELLITE THERMAL INTELLIGENCE // PS 26162</span>
           </div>
         </div>
 
-      {/* 2. PRIMARY NAVIGATION */}
-      <nav className="topbar-nav" aria-label="Main Navigation">
-        <button
-          type="button"
-          className={`nav-tab cinematic-tab ${currentView === 'landing' ? 'active' : ''}`}
-          onClick={() => onViewChange('landing')}
-          title="Switch to 3D Cinematic Observation Experience"
-        >
-          <span className="nav-icon">🪐</span>
-          <span className="nav-label">CINEMATIC VIEW</span>
-        </button>
+        {/* 2. PRIMARY NAVIGATION (ZERO EMOJIS, CLEAN TECHNICAL ICONS) */}
+        <nav className="topbar-nav" aria-label="Main Navigation">
+          <button
+            type="button"
+            className={`nav-tab cinematic-tab ${currentView === 'landing' ? 'active' : ''}`}
+            onClick={() => onViewChange('landing')}
+            title="Switch to 3D Cinematic Earth Observation Experience"
+          >
+            <Orbit size={14} className="nav-tab-icon" />
+            <span className="nav-label">CINEMATIC VIEW</span>
+          </button>
 
-        <button
-          type="button"
-          className={`nav-tab ${currentView === 'dashboard' ? 'active' : ''}`}
-          onClick={() => onViewChange('dashboard')}
-        >
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">DASHBOARD</span>
-        </button>
+          <button
+            type="button"
+            className={`nav-tab ${currentView === 'dashboard' ? 'active' : ''}`}
+            onClick={() => onViewChange('dashboard')}
+            title="Primary Operational Mission Control"
+          >
+            <LayoutDashboard size={14} className="nav-tab-icon" />
+            <span className="nav-label">DASHBOARD</span>
+          </button>
 
           <button
             type="button"
             className={`nav-tab ${currentView === 'incidents' ? 'active' : ''}`}
             onClick={() => onViewChange('incidents')}
+            title="Prioritized Incident Triage Queue"
           >
-            <FontAwesomeIcon icon={faTriangleExclamation} className="nav-fa-icon" />
-            <span className="nav-label">Incidents</span>
+            <AlertTriangle size={14} className="nav-tab-icon" />
+            <span className="nav-label">INCIDENTS</span>
           </button>
 
           <button
             type="button"
             className={`nav-tab ${currentView === 'map' ? 'active' : ''}`}
             onClick={() => onViewChange('map')}
+            title="Full 2D Geospatial Threat Map"
           >
-            <FontAwesomeIcon icon={faMap} className="nav-fa-icon" />
-            <span className="nav-label">Map</span>
+            <MapIcon size={14} className="nav-tab-icon" />
+            <span className="nav-label">MAP</span>
           </button>
 
           <button
             type="button"
             className={`nav-tab ${currentView === 'status' ? 'active' : ''}`}
             onClick={() => onViewChange('status')}
+            title="Sensor Feeds & Ingestion Health"
           >
-            <FontAwesomeIcon icon={faBolt} className="nav-fa-icon" />
-            <span className="nav-label">System Status</span>
+            <Activity size={14} className="nav-tab-icon" />
+            <span className="nav-label">SYSTEM STATUS</span>
           </button>
 
           <button
             type="button"
             className={`nav-tab ${currentView === 'settings' ? 'active' : ''}`}
             onClick={() => onViewChange('settings')}
+            title="Bounding Box & Simulation Presets"
           >
-            <FontAwesomeIcon icon={faGear} className="nav-fa-icon" />
-            <span className="nav-label">Settings</span>
+            <Settings size={14} className="nav-tab-icon" />
+            <span className="nav-label">SETTINGS</span>
           </button>
         </nav>
       </div>
     </header>
   );
 };
+export default TopBar;

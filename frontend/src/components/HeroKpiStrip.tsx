@@ -1,12 +1,5 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faFire,
-  faArrowsRotate,
-  faIndustry,
-  faTriangleExclamation,
-  faCheckCircle,
-} from '@fortawesome/free-solid-svg-icons';
+import { Flame, RotateCw, Factory, AlertOctagon, CheckCircle2 } from 'lucide-react';
 
 interface HeroKpiStripProps {
   thermalAnomaliesCount: number;
@@ -37,14 +30,14 @@ export const HeroKpiStrip: React.FC<HeroKpiStripProps> = ({
         tabIndex={0}
       >
         <div className="kpi-top">
-          <span className="kpi-title">Thermal Anomalies</span>
-          <FontAwesomeIcon icon={faFire} className="kpi-icon-regular text-muted" />
+          <span className="kpi-title">THERMAL ANOMALIES</span>
+          <Flame size={14} className="kpi-icon-tech text-muted" />
         </div>
         <div className="kpi-main">
           <span className="kpi-number">{thermalAnomaliesCount}</span>
         </div>
         <div className="kpi-bottom">
-          <span className="kpi-caption">Active NASA FIRMS feeds</span>
+          <span className="kpi-caption">NASA FIRMS Active Telemetry</span>
         </div>
       </div>
 
@@ -56,14 +49,14 @@ export const HeroKpiStrip: React.FC<HeroKpiStripProps> = ({
         tabIndex={0}
       >
         <div className="kpi-top">
-          <span className="kpi-title">Persistent Sources</span>
-          <FontAwesomeIcon icon={faArrowsRotate} className="kpi-icon-regular text-muted" />
+          <span className="kpi-title">PERSISTENT SOURCES</span>
+          <RotateCw size={13} className="kpi-icon-tech text-muted" />
         </div>
         <div className="kpi-main">
           <span className="kpi-number">{persistentSourcesCount}</span>
         </div>
         <div className="kpi-bottom">
-          <span className="kpi-caption">Multi-pass recurrence</span>
+          <span className="kpi-caption">Multi-Pass Satellite Recurrence</span>
         </div>
       </div>
 
@@ -75,18 +68,18 @@ export const HeroKpiStrip: React.FC<HeroKpiStripProps> = ({
         tabIndex={0}
       >
         <div className="kpi-top">
-          <span className="kpi-title">Industrial Candidates</span>
-          <FontAwesomeIcon icon={faIndustry} className="kpi-icon-regular text-muted" />
+          <span className="kpi-title">INDUSTRIAL CANDIDATES</span>
+          <Factory size={14} className="kpi-icon-tech text-muted" />
         </div>
         <div className="kpi-main">
           <span className="kpi-number">{industrialCandidatesCount}</span>
         </div>
         <div className="kpi-bottom">
-          <span className="kpi-caption">Within 5 km infrastructure</span>
+          <span className="kpi-caption">Within 5.0 KM Infrastructure</span>
         </div>
       </div>
 
-      {/* 4. HIGH RISK INCIDENTS — VISUALLY DOMINANT (Answers Q1: Is there an active dangerous event?) */}
+      {/* 4. HIGH RISK INCIDENTS */}
       <div
         className={`hero-kpi-card kpi-card-critical-dominant ${activeFilter === 'high_risk' ? 'card-selected' : ''}`}
         onClick={() => onFilterClick && onFilterClick('high_risk')}
@@ -94,24 +87,28 @@ export const HeroKpiStrip: React.FC<HeroKpiStripProps> = ({
         tabIndex={0}
       >
         <div className="kpi-top">
-          <span className="kpi-title font-bold">High Risk Incidents</span>
-          <FontAwesomeIcon
-            icon={isHighRiskActive ? faTriangleExclamation : faCheckCircle}
-            className={`kpi-icon-dominant ${isHighRiskActive ? 'icon-alert-urgent' : 'icon-alert-clear'}`}
-          />
+          <span className="kpi-title">HIGH RISK INCIDENTS</span>
+          {isHighRiskActive ? (
+            <AlertOctagon size={14} className="kpi-icon-urgent text-red" />
+          ) : (
+            <CheckCircle2 size={14} className="kpi-icon-clear text-green" />
+          )}
         </div>
         <div className="kpi-main">
           <span className={`kpi-number ${isHighRiskActive ? 'number-alert-urgent' : 'number-alert-clear'}`}>
             {highRiskIncidentsCount}
           </span>
-          {isHighRiskActive && <span className="kpi-dominant-tag">ACTION REQUIRED</span>}
+          <span className={`kpi-status-tag ${isHighRiskActive ? 'tag-urgent' : 'tag-nominal'}`}>
+            {isHighRiskActive ? 'ACTION REQUIRED' : 'NOMINAL'}
+          </span>
         </div>
         <div className="kpi-bottom">
           <span className="kpi-caption">
-            {isHighRiskActive ? 'Critical priority triage queue' : 'No active critical escalations'}
+            {isHighRiskActive ? 'Critical Triage Queue Active' : 'Zero High-Risk Escalations'}
           </span>
         </div>
       </div>
     </section>
   );
 };
+export default HeroKpiStrip;

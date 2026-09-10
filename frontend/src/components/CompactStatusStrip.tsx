@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../config/api';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircle, faArrowsRotate, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { RotateCw, Loader2, Radio } from 'lucide-react';
 
 interface CompactStatusStripProps {
   lastUpdated: string;
@@ -61,60 +60,64 @@ export const CompactStatusStrip: React.FC<CompactStatusStripProps> = ({
 
   return (
     <div className="compact-status-strip" role="status" aria-label="System Connectivity Strip">
-      <div className="status-strip-left" onClick={onNavigateStatus} style={{ cursor: onNavigateStatus ? 'pointer' : 'default' }}>
-        <div className="status-pill-item" title={statuses.firms ? 'FIRMS: Connected' : 'FIRMS: Degraded'}>
-          <span className="status-label">FIRMS</span>
-          <FontAwesomeIcon
-            icon={faCircle}
-            className={`status-dot ${statuses.firms ? 'status-dot-ok' : 'status-dot-warn'}`}
-          />
+      <div
+        className="status-strip-left"
+        onClick={onNavigateStatus}
+        style={{ cursor: onNavigateStatus ? 'pointer' : 'default' }}
+      >
+        <span className="status-system-header">
+          <Radio size={12} className="status-header-icon" />
+          <span>LINK STATUS:</span>
+        </span>
+
+        <div className="status-pill-item" title={statuses.firms ? 'FIRMS: Online & Synchronized' : 'FIRMS: Degraded'}>
+          <span className="status-label">NASA FIRMS</span>
+          <span className={`status-dot ${statuses.firms ? 'status-dot-ok' : 'status-dot-warn'}`} />
         </div>
 
-        <span className="status-sep">|</span>
+        <span className="status-sep">/</span>
 
         <div className="status-pill-item" title={statuses.sentinel2 ? 'Sentinel-2: Connected' : 'Sentinel-2: Degraded'}>
-          <span className="status-label">Sentinel-2</span>
-          <FontAwesomeIcon
-            icon={faCircle}
-            className={`status-dot ${statuses.sentinel2 ? 'status-dot-ok' : 'status-dot-warn'}`}
-          />
+          <span className="status-label">SENTINEL-2 L2A</span>
+          <span className={`status-dot ${statuses.sentinel2 ? 'status-dot-ok' : 'status-dot-warn'}`} />
         </div>
 
-        <span className="status-sep">|</span>
+        <span className="status-sep">/</span>
 
         <div className="status-pill-item" title={statuses.database ? 'Database: Connected' : 'Database: Degraded'}>
-          <span className="status-label">Database</span>
-          <FontAwesomeIcon
-            icon={faCircle}
-            className={`status-dot ${statuses.database ? 'status-dot-ok' : 'status-dot-warn'}`}
-          />
+          <span className="status-label">TELEMETRY DB</span>
+          <span className={`status-dot ${statuses.database ? 'status-dot-ok' : 'status-dot-warn'}`} />
         </div>
 
-        <span className="status-sep">|</span>
+        <span className="status-sep">/</span>
 
         <div className="status-pill-item" title={statuses.osm ? 'OSM: Connected' : 'OSM: Degraded'}>
-          <span className="status-label">OSM</span>
-          <FontAwesomeIcon
-            icon={faCircle}
-            className={`status-dot ${statuses.osm ? 'status-dot-ok' : 'status-dot-warn'}`}
-          />
+          <span className="status-label">OSM INFRASTRUCTURE</span>
+          <span className={`status-dot ${statuses.osm ? 'status-dot-ok' : 'status-dot-warn'}`} />
         </div>
       </div>
 
       <div className="status-strip-right">
-        <span className="status-updated-text">Last updated {lastUpdated}</span>
+        <span className="status-updated-text">
+          TELEMETRY SYNC: <span className="status-updated-time">{lastUpdated}</span>
+        </span>
         {onRefresh && (
           <button
             type="button"
             className="status-sync-icon-btn"
             onClick={onRefresh}
             disabled={refreshing}
-            title="Refresh operational telemetry"
+            title="Synchronize real-time satellite feeds"
           >
-            <FontAwesomeIcon icon={refreshing ? faSpinner : faArrowsRotate} spin={refreshing} />
+            {refreshing ? (
+              <Loader2 size={13} className="spin-fast" />
+            ) : (
+              <RotateCw size={13} />
+            )}
           </button>
         )}
       </div>
     </div>
   );
 };
+export default CompactStatusStrip;

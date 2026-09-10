@@ -725,7 +725,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={() => setRiskDisplayMode('ai_risk')}
             title="AI 2D Risk Propagation Field with smooth continuous radial gradient"
           >
-            🔥 AI Risk Field
+            AI Risk Field
           </button>
           <button
             type="button"
@@ -733,7 +733,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={() => setRiskDisplayMode('thermal_field')}
             title="Radiometric Thermal Intensity Field"
           >
-            🌡️ Thermal Field
+            Thermal Field
           </button>
         </div>
 
@@ -745,7 +745,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={handleIndiaFocus}
             title="Focus camera on Indian subcontinent"
           >
-            🇮🇳 India Focus
+            India Focus
           </button>
           <button
             type="button"
@@ -753,7 +753,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             onClick={handleGlobalView}
             title="Global Earth View"
           >
-            🌍 Global View
+            Global View
           </button>
         </div>
 
@@ -766,13 +766,13 @@ export const FireMap: React.FC<FireMapProps> = ({
             title="Open Incident Intelligence Command Panel (Split Workspace)"
             style={{
               marginLeft: '6px',
-              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(2, 132, 199, 0.4) 100%)',
-              borderColor: '#38bdf8',
-              color: '#ffffff',
+              background: 'rgba(0, 183, 255, 0.15)',
+              borderColor: 'rgba(0, 183, 255, 0.4)',
+              color: '#EAF6FF',
               fontWeight: 700,
             }}
           >
-            ⚡ OPEN INCIDENT
+            OPEN INCIDENT
           </button>
         )}
 
@@ -887,7 +887,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             >
               <Tooltip permanent direction="top" offset={[0, -20]} className="risk-field-disclaimer-tooltip">
                 <div style={{ textAlign: 'center', fontSize: '9px', fontWeight: 700, color: '#fca5a5' }}>
-                  <div>🔥 AI ESTIMATED RISK FIELD: {calculatedRiskRadiusKm} KM</div>
+                  <div>AI ESTIMATED RISK FIELD: {calculatedRiskRadiusKm} KM</div>
                   <div style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 500 }}>
                     [ AI estimated risk propagation — NOT actual physical fire boundary ]
                   </div>
@@ -974,8 +974,8 @@ export const FireMap: React.FC<FireMapProps> = ({
               }}
             >
               <Tooltip permanent direction="center" className="proximity-vector-tooltip">
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#38bdf8' }}>
-                  🔥 ── {industrialFacility.distance_km.toFixed(1)} KM ── 🏭
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.04em' }}>
+                  HAZARD ── {industrialFacility.distance_km.toFixed(1)} KM ── FACILITY
                 </span>
               </Tooltip>
             </Polyline>
@@ -993,7 +993,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             >
               <Tooltip permanent direction="right" offset={[10, 0]} className="industrial-facility-tooltip">
                 <span style={{ fontSize: '9px', fontWeight: 700, color: '#fbbf24' }}>
-                  🏭 {industrialFacility.name} ({industrialFacility.distance_km.toFixed(1)} KM)
+                  {industrialFacility.name} ({industrialFacility.distance_km.toFixed(1)} KM)
                 </span>
               </Tooltip>
             </CircleMarker>
@@ -1405,7 +1405,7 @@ export const FireMap: React.FC<FireMapProps> = ({
             className="btn-cta-open-incident"
             onClick={() => setWorkspaceState('INCIDENT_SPLIT_VIEW')}
           >
-            <span>⚡ OPEN INCIDENT</span>
+            <span>OPEN INCIDENT</span>
             <span className="cta-arrow">&rarr;</span>
           </button>
         </div>
@@ -1602,7 +1602,7 @@ export const FireMap: React.FC<FireMapProps> = ({
               </div>
               <div className="facility-context-card">
                 <div className="facility-head-row">
-                  <span className="fac-icon">🏭</span>
+                  <span className="fac-icon"><FontAwesomeIcon icon={faIndustry} /></span>
                   <div className="fac-details">
                     <span className="fac-name">{industrialFacility.name}</span>
                     <span className="fac-type">{industrialFacility.type} • {industrialFacility.category}</span>
@@ -1610,7 +1610,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   <span className="fac-distance-badge">{industrialFacility.distance_km.toFixed(1)} KM</span>
                 </div>
                 <div className="proximity-alert-box critical">
-                  <span>⚠️</span>
+                  <span className="alert-badge-tech"><FontAwesomeIcon icon={faTriangleExclamation} /></span>
                   <span>Direct threat exposure: Industrial fuel storage & processing facility in active influence corridor.</span>
                 </div>
               </div>
@@ -1691,7 +1691,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action alert-btn"
                   onClick={() => handleDispatchAction('dispatch')}
                 >
-                  <span className="btn-icon">🚒</span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faFire} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">DISPATCH UNITS</span>
                     <span className="btn-sub-label">Hazmat & Fire Squad</span>
@@ -1703,7 +1703,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action task-btn"
                   onClick={() => handleDispatchAction('tasking')}
                 >
-                  <span className="btn-icon">🛰️</span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faSatellite} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">SATELLITE TASKING</span>
                     <span className="btn-sub-label">High-Res S2 Pass</span>
@@ -1715,7 +1715,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action brief-btn"
                   onClick={() => handleDispatchAction('brief')}
                 >
-                  <span className="btn-icon">📋</span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faBookOpen} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">ISSUE BRIEFING</span>
                     <span className="btn-sub-label">EOC Evacuation Buffer</span>
@@ -1727,7 +1727,7 @@ export const FireMap: React.FC<FireMapProps> = ({
                   className="btn-operational-action notify-btn"
                   onClick={() => handleDispatchAction('notify')}
                 >
-                  <span className="btn-icon">📢</span>
+                  <span className="btn-icon"><FontAwesomeIcon icon={faBolt} /></span>
                   <div className="btn-text-block">
                     <span className="btn-main-label">BROADCAST ADVISORY</span>
                     <span className="btn-sub-label">District Fire Control</span>
@@ -1770,6 +1770,7 @@ export const FireMap: React.FC<FireMapProps> = ({
               <div className="legend-subtitle">THERMAL SEVERITY</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#ef4444' }}></span> Critical (&ge;50 MW)</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#f97316' }}></span> High (&ge;25 MW)</div>
+              <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#f97316' }}></span> High (&ge;25 MW)</div>
               <div className="legend-item"><span className="legend-dot" style={{ backgroundColor: '#eab308' }}></span> Moderate (&ge;10 MW)</div>
               <div className="legend-item"><span className="legend-ring"></span> Selected Thermal Core</div>
             </div>
@@ -1798,7 +1799,7 @@ export const FireMap: React.FC<FireMapProps> = ({
       {/* CTRL + SCROLL UX HINT & STATUS INDICATOR */}
       {showZoomHint && (
         <div className="globe-zoom-hint" role="status" aria-live="polite">
-          <span className="hint-icon">🖱️</span>
+          <span className="hint-icon"><FontAwesomeIcon icon={faMagnifyingGlass} /></span>
           <span>HOLD CTRL + SCROLL TO ZOOM</span>
         </div>
       )}
