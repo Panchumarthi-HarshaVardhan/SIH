@@ -368,7 +368,7 @@ export function DashboardView({
           </div>
 
           {/* COMPACT RECENT ACTIVITY FEED BELOW MAP */}
-          <RecentActivitySection alertsCount={alerts.length} hotspotsCount={hotspots.length} />
+          <RecentActivitySection alertsCount={alerts.length} hotspotsCount={hotspots.length} lastUpdated={lastUpdated} />
         </div>
 
         {/* RIGHT ~30%: PRIORITY INCIDENTS LIST */}

@@ -26,6 +26,7 @@ import type {
 import { useMapContext } from './useMapContext';
 import { dispatchMapAction } from './actionDispatcher';
 import { sendAgentChatMessage } from '../../api/agent';
+import './agent.css';
 
 export interface AnomalyIntelligenceAgentDrawerProps {
   isOpen?: boolean;

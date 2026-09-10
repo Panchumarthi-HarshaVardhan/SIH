@@ -1,7 +1,7 @@
 {
   "dataset_separability_status": "ANALYZED",
   "total_samples_analyzed": 949,
-  "test_samples_evaluated": 146,
+  "test_samples_evaluated": 70,
   "metadata_audit": {
     "source_distribution_per_class": {
       "NON_FIRE": {
@@ -39,33 +39,28 @@
   },
   "spectral_separability": {
     "pca_explained_variance_ratio": [
-      0.6095,
-      0.1213,
-      0.088
+      0.8127,
+      0.1129,
+      0.0383
     ],
-    "total_explained_variance_3_components": 0.8188,
-    "spectral_silhouette_score": 0.2619,
+    "total_explained_variance_3_components": 0.964,
+    "spectral_silhouette_score": 0.381,
     "pca_class_centroids": {
-      "NON_FIRE": [
-        -2.3813326358795166,
-        -0.22492638230323792,
-        0.34020981192588806
-      ],
       "WILDFIRE": [
-        -1.6152002811431885,
-        0.370395302772522,
-        -0.751859188079834
+        -2.9818389415740967,
+        -1.1908743381500244,
+        -0.011284466832876205
       ],
       "INDUSTRIAL_FIRE": [
-        5.69944429397583,
-        -0.19105255603790283,
-        0.5562366247177124
+        2.5110225677490234,
+        1.0028413534164429,
+        0.009502745233476162
       ]
     }
   },
   "findings": [
     "No metadata (lat/lon/time/source) is provided to the CNN feature extractor.",
-    "The spectral feature space exhibits high natural separation (Silhouette Score: 0.262).",
+    "The spectral feature space exhibits high natural separation (Silhouette Score: 0.381).",
     "SWIR bands (B11 and B12) create distinct radiometric signatures for active combustion, while NIR (B08) separates vegetated background."
   ]
 }

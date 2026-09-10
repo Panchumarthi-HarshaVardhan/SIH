@@ -41,6 +41,6 @@
 ---
 
 ## 5. Audit Details
-- **Errors (3):** Train/Val spatial cluster overlap (17 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50'], Train/Test spatial cluster overlap (20 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50'], Val/Test spatial cluster overlap (15 clusters): ['cluster_39.00_24.00', 'cluster_36.00_28.00', 'cluster_40.00_-121.50']
-- **Missing Images:** 0
+- **Errors (4):** Found 490 missing image files., Train/Val spatial cluster overlap (17 clusters): ['cluster_36.00_28.00', 'cluster_21.50_81.50', 'cluster_24.50_83.00'], Train/Test spatial cluster overlap (20 clusters): ['cluster_21.50_81.50', 'cluster_21.00_85.00', 'cluster_21.00_85.50'], Val/Test spatial cluster overlap (15 clusters): ['cluster_36.00_28.00', 'cluster_21.50_81.50', 'cluster_21.00_72.50']
+- **Missing Images:** 490
 - **Corrupted Files:** 0

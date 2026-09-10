@@ -23,7 +23,7 @@
     "validation": 130,
     "test": 146
   },
-  "missing_files_count": 0,
+  "missing_files_count": 490,
   "invalid_files_count": 0,
   "nan_inf_files_count": 0,
   "duplicate_samples_count": 0,
@@ -47,7 +47,7 @@
       "B11",
       "B12"
     ],
-    "all_6_bands_present_in_all_patches": true
+    "all_6_bands_present_in_all_patches": false
   },
   "label_provenance_summary": {
     "GROUND_TRUTH": 699,
@@ -57,6 +57,7 @@
     "notes": "Wildfire candidate seeds labeled SOURCE_LABEL; FIRMS+OSM pairings labeled WEAK_LABEL."
   },
   "errors": [
+    "Found 490 missing .npz patch files.",
     "Spatial cluster overlap detected across splits (52 overlapping clusters)."
   ],
   "warnings": []
