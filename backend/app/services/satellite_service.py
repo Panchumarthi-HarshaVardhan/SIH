@@ -193,7 +193,7 @@ class Sentinel2ImageProvider(SatelliteImageProvider):
 
         should_close = False
         if client is None:
-            client = httpx.AsyncClient(timeout=25.0)
+            client = httpx.AsyncClient(timeout=5.0)
             should_close = True
 
         try:
@@ -316,7 +316,7 @@ class Sentinel2ImageProvider(SatelliteImageProvider):
 
         should_close = False
         if client is None:
-            client = httpx.AsyncClient(timeout=60.0)
+            client = httpx.AsyncClient(timeout=6.0)
             should_close = True
 
         try:
